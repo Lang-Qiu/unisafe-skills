@@ -1,0 +1,64 @@
+# ---- 提供的示例 / 作业材料（不入库）----
+InfoSec-example-skills/
+作业说明/
+
+# ---- 数据集 / 输出产物（体量大，不入库；从原始来源获取）----
+data/
+**/data/
+outputs/
+output/
+raw/
+normalized/
+unified/
+*.parquet
+*.arrow
+
+# ---- 模型权重 / 缓存 ----
+models/
+hf_cache/
+huggingface/
+.cache/
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+*.gguf
+*.onnx
+
+# ---- 图片 / 截图（运行截图请放进小组报告/提交 zip，不入 git）----
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.webp
+*.tiff
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.python-version
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# ---- 密钥 / 环境（绝不入库）----
+.env
+.env.*
+*.key
+secrets*
+hf_token*
+*token.txt
+
+# ---- OS / 编辑器 ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# 注：M0_*.jsonl 是小体量手写样本，保留入库（不在上面被忽略的目录内）。
