@@ -2,6 +2,8 @@
 
 > 来源：experiment-agent `plan` 模式（代码实验路径），消费 ARS Stage 1（RQ Brief + Methodology Blueprint）+ [`M0_接口约定.md`](M0_接口约定.md)。
 > 本文件只设计、不执行。执行见衔接步骤。
+>
+> **阶段定位 = M2（多 Guard 评测对比），排在 M1 之后。** 前置依赖：M1 必须先产出可运行的 `guard-llama-guard` Skill（作业要求的主要产物）；本计划讲的是「Skill 做好之后怎么评测」，先有 Skill 才能跑本计划。
 
 ## Material Passport
 
@@ -138,8 +140,10 @@ Llama Guard 1B 几分钟；WildGuard 7B 约几十分钟；ShieldGemma2 1k 图中
 
 ---
 
-## 衔接步骤
+## 衔接步骤（时间线）
 
-1. **M1 实现**：在 `feat/guard-llama-guard` 上把上述协议写成 `guard-llama-guard`（含 `src/guards/`、`metrics.py`）。
-2. **执行**：用 experiment-agent **`run` 模式**跑命令骨架 + 实时监控。
+> **M1（前置，本计划之前）写出 Skill → M2（本计划）执行评测 → 核验。**
+
+1. **M1（前置 · 主要产物）**：在 `feat/guard-llama-guard` 上把 [`M0_接口约定.md`](M0_接口约定.md) §4/§5 与本计划 §6/§9 的协议实现为 `guard-llama-guard` Skill（`src/guards/`、`metrics.py`、`config/category_mapping.json`、`examples/`、`tests/`）。**这才是作业要求的可复用 Skill，必须先完成。**
+2. **M2（本计划 · 执行）**：用 experiment-agent **`run` 模式**跑 §10 命令骨架 + 实时监控，产出 §11 的评测结果。
 3. **核验**：用 experiment-agent **`validate` 模式**做统计解读 + 11 类谬误扫描 + 可复现性重跑。

@@ -12,6 +12,7 @@
 | [M0_接口约定.md](M0_接口约定.md) | **接口契约**：统一 schema、字段读取、22 类 taxonomy 映射表、Guard 输出 schema、指标定义 |
 | [M0_dataset_unified_sample.jsonl](M0_dataset_unified_sample.jsonl) | 7 条统一数据样本（text+image），已实跑 `dataset-format-checker` = PASS |
 | [M0_guard_output_sample.jsonl](M0_guard_output_sample.jsonl) | Guard 输出目标样本（含超时/空输出异常处理示例） |
+| [M2_方向B_实验计划.md](M2_方向B_实验计划.md) | **方向 B 评测计划（M2）**：多 Guard × 多任务对比矩阵、指标与统计设计——排在 M1 产出 Skill 之后执行 |
 
 ## 流水线
 
@@ -50,7 +51,7 @@
 
 ## 里程碑
 
-M0 接口契约 ✅ → M1 文本核心 E2E → M2 多 Guard 对比+over-refusal → M3 多模态亮点 → M4 报告+截图+打包。
+M0 接口契约 ✅ → **M1 实现文本 Guard Skill（`guard-llama-guard`，主要产物）** → **M2 按 [`M2_方向B_实验计划.md`](M2_方向B_实验计划.md) 多 Guard 对比+over-refusal** → M3 多模态亮点 → M4 报告+截图+打包。
 
 ## 安全声明
 
