@@ -376,11 +376,18 @@ class TestMainRuleOnlyE2E:
         assert meta["guards"]["rule"]["eligible_total"] == 7
 
     def test_required_guard_load_failure_is_exit2(self, tmp_path):
-        # llama_guard is a KNOWN guard whose deps (torch/transformers) are not
-        # installed in the core env -> load fails -> required -> exit 2 + FIX hint.
-        res = _run_main(["--guards", "llama_guard",
-                         "--input", "examples/tiny_unified.jsonl",
-                         "--out", str(tmp_path / "x")])
+        # llama_guard load must fail FAST in a clean offline env (missing
+        # transformers, or - if installed - offline gated download) -> exit 2.
+        import os
+        env = dict(os.environ, HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1")
+        env.pop("HF_TOKEN", None)
+        res = subprocess.run(
+            [sys.executable, "-m", "guard_llama_guard.main",
+             "--guards", "llama_guard",
+             "--input", "examples/tiny_unified.jsonl",
+             "--out", str(tmp_path / "x")],
+            capture_output=True, text=True, cwd=str(SKILL_DIR),
+            timeout=120, env=env)
         assert res.returncode == 2
         assert "FIX" in (res.stderr + res.stdout)
 
@@ -545,3 +552,56 @@ class TestMetricsV1:
         assert m["tp"] == 3 and m["tn"] == 2 and m["fp"] == 2 and m["fn"] == 0
         assert m["unsafe_fpr_on_safe_probe"] == 1.0
         assert m["auroc"] is None  # honest N/A for the rule baseline
+
+
+class TestLlamaGuardAdapter:
+    """Model-free unit tests: parsing, message building, category mapping,
+    and the degradation path. Real inference is Core-Full (needs GPU + gated
+    access) and is exercised via the module self-test on capable machines."""
+
+    def test_parse_output_safe_and_unsafe(self):
+        from guard_llama_guard.guards.llama_guard import parse_output
+        assert parse_output("safe") == (False, [])
+        assert parse_output("\n\nsafe") == (False, [])
+        assert parse_output("\n\nunsafe\nS2,S10") == (True, ["S2", "S10"])
+        assert parse_output("unsafe\nS14") == (True, ["S14"])
+
+    def test_parse_output_rejects_garbage(self):
+        from guard_llama_guard.guards.llama_guard import parse_output
+        import pytest
+        with pytest.raises(ValueError):
+            parse_output("I think this is fine?")
+
+    def test_map_s_codes_to_canonical(self):
+        from guard_llama_guard.guards.llama_guard import map_s_codes
+        assert map_s_codes(["S2"]) == ["illicit_behavior"]
+        assert set(map_s_codes(["S6"])) == {"medical_safety", "legal_safety"}
+        assert map_s_codes(["S99"]) == ["other"]  # unknown stays explicit
+
+    def test_build_messages_two_input_modes(self):
+        from guard_llama_guard.guards.llama_guard import build_messages
+        from guard_llama_guard.utils import Route
+        po = build_messages(Route(record_id="x", task_type="prompt_only_safety",
+                                  prompt="hello"))
+        assert [m["role"] for m in po] == ["user"]
+        pr = build_messages(Route(record_id="x", task_type="prompt_response_safety",
+                                  prompt="q", response="a"))
+        assert [m["role"] for m in pr] == ["user", "assistant"]
+        assert pr[1]["content"] == "a"
+
+    def test_load_failure_is_guard_load_error_with_hint(self):
+        from guard_llama_guard.guards.llama_guard import LlamaGuard
+        from guard_llama_guard.guards.base import GuardLoadError
+        import os
+        import pytest
+        old = {k: os.environ.get(k) for k in ("HF_HUB_OFFLINE", "TRANSFORMERS_OFFLINE")}
+        os.environ["HF_HUB_OFFLINE"] = os.environ["TRANSFORMERS_OFFLINE"] = "1"
+        try:
+            with pytest.raises(GuardLoadError):
+                LlamaGuard().load()
+        finally:
+            for k, v in old.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
