@@ -1,0 +1,4 @@
+{"id": "tiny:bad:000001", "this line is not valid JSON because the brace never closes
+{"id": "tiny:bad:000002", "content": {"prompt": "valid JSON but missing source/task_type/label -> schema_invalid"}}
+
+{"id": "tiny:bad:000003", "source": {"dataset": "TinySmoke"}, "task_type": "prompt_only_safety", "content": {"prompt": "label.is_unsafe is a string, not a bool"}, "label": {"target": "prompt", "is_unsafe": "unsafe", "policy_action": "refuse", "canonical_categories": []}}
