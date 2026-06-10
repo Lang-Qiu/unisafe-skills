@@ -11,8 +11,8 @@ Guard Skill（方向 B，文本主 Guard）。在统一 JSONL 上运行三个文
 
 ## 待办（M1）
 
-- [ ] `guards/`：llama_guard / rule_based / openai_moderation 三个适配器
+- [ ] `scripts/guards/`：llama_guard / rule_based / openai_moderation 三个适配器
 - [ ] 异常/超时/空输出 → `error` 字段 + 计入 metadata，不崩
-- [ ] 标签映射 S1-S14 / OpenAI → 22 类
-- [ ] `metrics.py`：多 Guard × 多任务对比 + 对抗分桶 + over-refusal
+- [ ] 标签映射 S1-S14 / OpenAI → 22 类（`references/category_mapping.json`）
+- [ ] `scripts/metrics.py`：多 Guard × 多任务对比 + 对抗分桶 + over-refusal
 - [ ] AUROC 用连续分（Llama Guard token 概率 / OpenAI scores）；规则基线无 AUROC

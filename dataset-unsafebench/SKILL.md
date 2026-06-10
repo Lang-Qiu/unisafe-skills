@@ -11,15 +11,15 @@ Use this skill when converting UnsafeBench (`yiting/UnsafeBench`) into the unifi
 `modality:["image"]` / `task_type:image_safety`. It has both Safe and Unsafe images, so the
 multimodal side can still compute FPR. Keep the sample small (200–500 images).
 
-## Planned structure
+## Planned structure (standard skill layout; only SKILL.md required)
 
 ```
 dataset-unsafebench/
-  SKILL.md  manifest.yaml  README.md  requirements.txt
-  src/ (main.py utils.py)
-  config/category_mapping.json   # 11 UnsafeBench cats -> 22 canonical
-  examples/ (output_example.jsonl)
-  tests/test_basic.py
+  SKILL.md  README.md  requirements.txt
+  scripts/ (main.py utils.py validate.py)
+  references/category_mapping.json   # 11 UnsafeBench cats -> 22 canonical
+  examples/ (output.sample.jsonl)
+  tests/ (test_validate.py fixtures/)
 ```
 
 ## Field mapping & conventions

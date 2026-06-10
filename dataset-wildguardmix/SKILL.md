@@ -11,15 +11,16 @@ Use this skill when converting WildGuardMix (`allenai/wildguardmix`, gated, odc-
 unified safety benchmark format. It fills the schema most fully — prompt harm, response harm,
 refusal, adversarial, and a mappable fine-grained `subcategory`.
 
-## Planned structure (per assignment)
+## Planned structure (standard skill layout; only SKILL.md required)
 
 ```
 dataset-wildguardmix/
-  SKILL.md  manifest.yaml  README.md  requirements.txt
-  src/ (main.py utils.py)
-  config/category_mapping.json   # subcategory -> 22 canonical
-  examples/ (input_example.jsonl output_example.jsonl)
-  tests/test_basic.py
+  SKILL.md  README.md  requirements.txt
+  scripts/ (main.py utils.py validate.py)
+  references/category_mapping.json   # subcategory -> 22 canonical
+  templates/dataset-card.md          # stats -> report section
+  examples/ (input.sample.jsonl output.sample.jsonl)
+  tests/ (test_validate.py fixtures/)
 ```
 
 ## Field mapping & conventions

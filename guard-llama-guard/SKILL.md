@@ -11,15 +11,16 @@ Reads the unified dataset (e.g. `dataset-wildguardmix` output), routes each reco
 `task_type`/`modality`, runs three text guards, and emits unified guard-result JSONL +
 a multi-guard × multi-task metrics table.
 
-## Planned structure
+## Planned structure (standard skill layout; only SKILL.md required)
 
 ```
 guard-llama-guard/
-  SKILL.md  manifest.yaml  README.md  requirements.txt
-  src/ (main.py guards/ metrics.py)
-  config/category_mapping.json   # S1-S14 / OpenAI cats -> 22 canonical
-  examples/ (input_example.jsonl output_example.jsonl)
-  tests/test_basic.py
+  SKILL.md  README.md  requirements.txt
+  scripts/ (main.py guards/ metrics.py)
+  references/category_mapping.json   # S1-S14 / OpenAI cats -> 22 canonical
+  schemas/guard_output.schema.json   # formalizes M0 §5 guard-result schema
+  examples/ (input.sample.jsonl output.sample.jsonl)
+  tests/ (test_validate.py fixtures/)
 ```
 
 ## Contract

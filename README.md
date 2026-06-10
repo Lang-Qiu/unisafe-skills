@@ -31,6 +31,10 @@
 
 `guard-llama-guard` 内含规则基线与 OpenAI Moderation 两个对比 Guard。
 
+## Skill 结构约定
+
+按作业标准结构：**仅 `SKILL.md`（YAML frontmatter）必需**；代码 `scripts/`、映射表与规范 `references/`、输出约束 `schemas/`、样例 `examples/`、测试 `tests/`。目录结构不计分，评分只看 skill 能否被**发现并跑通**；各 skill 保留 `requirements.txt` 以撑可复现性。不再使用 `manifest.yaml` 与 `src/`。
+
 ## 数据与模型（不入库）
 
 `.gitignore` 已排除示例 skill、数据集、模型权重、图片缓存——**不要把数据集或权重提交进 git**。请从原始来源获取：

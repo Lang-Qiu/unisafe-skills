@@ -11,8 +11,8 @@ Dataset Skill（方向 A，文本主数据集）。把 [WildGuardMix](https://hu
 
 ## 待办（M1）
 
-- [ ] `src/main.py`：`load_dataset` + gated 认证失败提示（仿示例 `explain_load_error`）+ exit 2
+- [ ] `scripts/main.py`：`load_dataset` + gated 认证失败提示（仿示例 `explain_load_error`）+ exit 2
 - [ ] flat→unified 映射；null 标签跳过计数；编码 `errors="ignore"`
-- [ ] `config/category_mapping.json`：dump subcategory unique 值后补全 → 22 类
+- [ ] `references/category_mapping.json`：dump subcategory unique 值后补全 → 22 类
 - [ ] `metadata.json`：样本数、标签比例、按类别/对抗分布、skipped、load_errors
-- [ ] `tests/test_basic.py` + 自跑 checker = exit 0
+- [ ] `tests/test_validate.py`（+ `fixtures/` 微型样本）+ 自跑 checker = exit 0

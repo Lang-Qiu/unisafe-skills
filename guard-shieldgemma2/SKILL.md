@@ -12,15 +12,16 @@ Reads unified `image_safety` records (e.g. `dataset-unsafebench` output), runs S
 omni-moderation (image input), and emits the same unified guard-result schema as the text guards
 — demonstrating the Guard interface generalizes across modality with no interface change.
 
-## Planned structure
+## Planned structure (standard skill layout; only SKILL.md required)
 
 ```
 guard-shieldgemma2/
-  SKILL.md  manifest.yaml  README.md  requirements.txt
-  src/ (main.py guards/ metrics.py)
-  config/category_mapping.json   # 3 ShieldGemma policies -> 22 canonical
-  examples/ (input_example.jsonl output_example.jsonl)
-  tests/test_basic.py
+  SKILL.md  README.md  requirements.txt
+  scripts/ (main.py guards/ metrics.py)
+  references/category_mapping.json   # 3 ShieldGemma policies -> 22 canonical
+  schemas/guard_output.schema.json   # shared with guard-llama-guard
+  examples/ (input.sample.jsonl output.sample.jsonl)
+  tests/ (test_validate.py fixtures/)
 ```
 
 ## Contract
