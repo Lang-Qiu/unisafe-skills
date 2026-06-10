@@ -405,3 +405,143 @@ class TestMainRuleOnlyE2E:
         assert meta["valid_total"] == 3
         rows = _read_jsonl(out / "guard_output.rule.jsonl")
         assert len(rows) == meta["guards"]["rule"]["eligible_total"]
+
+
+def _toy_record(n, unsafe, probe=False):
+    rid = f"toy:test:{n:06d}"
+    rec = {"id": rid, "source": {"dataset": "Toy", "split": "test"},
+           "modality": ["text"], "task_type": "prompt_only_safety", "language": "en",
+           "content": {"prompt": f"toy prompt {n}", "response": None,
+                       "conversation": None, "images": [], "videos": [], "audio": []},
+           "label": {"target": "prompt", "is_unsafe": unsafe,
+                     "canonical_categories": ["violence"] if unsafe else [],
+                     "policy_action": "refuse" if unsafe else "allow"},
+           "risk_metadata": {"over_refusal_probe": True} if probe else {}}
+    return rec
+
+
+def _toy_row(n, pred, confidence=None, method=None, error=None):
+    rid = f"toy:test:{n:06d}"
+    p = {"is_unsafe": None if error else pred,
+         "risk_categories": [], "severity": None,
+         "action": "uncertain" if error else ("refuse" if pred else "allow"),
+         "confidence": None if error else confidence, "confidence_method": method}
+    return {"id": rid, "guard": {"name": "toy", "version": "0", "modality": ["text"]},
+            "prediction": p, "raw_output": {}, "runtime": {"latency_ms": 1},
+            "error": error}
+
+
+def _write_jsonl(path, objs):
+    with Path(path).open("w", encoding="utf-8", newline="\n") as f:
+        for o in objs:
+            f.write(json.dumps(o, ensure_ascii=False) + "\n")
+
+
+class TestMetricsV1:
+    def _evaluate(self, tmp_path, records, rows):
+        from guard_llama_guard import metrics
+        ds = tmp_path / "ds.jsonl"
+        go = tmp_path / "guard_output.toy.jsonl"
+        _write_jsonl(ds, records)
+        _write_jsonl(go, rows)
+        out = tmp_path / "reports"
+        result = metrics.evaluate(ds, [go], out)
+        return result, out
+
+    def test_known_confusion_matrix_hand_checked(self, tmp_path):
+        # truth: U U S S ; preds: U S U S -> TP=1 FN=1 FP=1 TN=1
+        records = [_toy_record(1, True), _toy_record(2, True),
+                   _toy_record(3, False), _toy_record(4, False)]
+        rows = [_toy_row(1, True), _toy_row(2, False),
+                _toy_row(3, True), _toy_row(4, False)]
+        result, _ = self._evaluate(tmp_path, records, rows)
+        m = result["toy"]["ALL"]["answered_only"]
+        assert m["tp"] == 1 and m["fn"] == 1 and m["fp"] == 1 and m["tn"] == 1
+        assert m["accuracy"] == 0.5
+        assert m["recall"] == 0.5
+        assert m["fpr"] == 0.5
+        assert m["macro_f1"] == 0.5
+
+    def test_error_rows_split_the_two_modes(self, tmp_path):
+        # same 4 + a 5th unsafe record whose prediction errored
+        records = [_toy_record(1, True), _toy_record(2, True),
+                   _toy_record(3, False), _toy_record(4, False),
+                   _toy_record(5, True)]
+        rows = [_toy_row(1, True), _toy_row(2, False), _toy_row(3, True),
+                _toy_row(4, False), _toy_row(5, None, error="timeout")]
+        result, _ = self._evaluate(tmp_path, records, rows)
+        ans = result["toy"]["ALL"]["answered_only"]
+        faw = result["toy"]["ALL"]["failure_as_wrong"]
+        assert ans["n"] == 4 and faw["n"] == 5
+        assert ans["accuracy"] == 0.5
+        assert faw["accuracy"] == 0.4          # error row counted as wrong
+        assert result["toy"]["ALL"]["coverage"] == 0.8
+        assert result["toy"]["ALL"]["error_rate"] == 0.2
+
+    def test_probe_metric_and_auroc(self, tmp_path):
+        records = [_toy_record(1, True), _toy_record(2, True),
+                   _toy_record(3, False), _toy_record(4, False, probe=True)]
+        rows = [_toy_row(1, True, 0.9, "model_prob"),
+                _toy_row(2, True, 0.8, "model_prob"),
+                _toy_row(3, False, 0.3, "model_prob"),
+                _toy_row(4, True, 0.85, "model_prob")]  # probe flagged unsafe
+        result, _ = self._evaluate(tmp_path, records, rows)
+        m = result["toy"]["ALL"]["answered_only"]
+        assert m["unsafe_fpr_on_safe_probe"] == 1.0
+        # pairs: (.9,.3)+ (.9,.85)+ (.8,.3)+ (.8,.85)- -> AUROC = 3/4 = 0.75
+        assert abs(m["auroc"] - 0.75) < 1e-9
+        assert result["toy"]["ALL"]["auroc_status"] == "ok"
+
+    def test_experimental_confidence_demotes_auroc(self, tmp_path):
+        records = [_toy_record(1, True), _toy_record(2, False)]
+        rows = [_toy_row(1, True, 0.9, "rule_keyword_score_experimental"),
+                _toy_row(2, False, 0.1, "rule_keyword_score_experimental")]
+        result, _ = self._evaluate(tmp_path, records, rows)
+        assert result["toy"]["ALL"]["auroc_status"] == "experimental"
+
+    def test_no_confidence_means_auroc_na(self, tmp_path):
+        records = [_toy_record(1, True), _toy_record(2, False)]
+        rows = [_toy_row(1, True), _toy_row(2, False)]
+        result, _ = self._evaluate(tmp_path, records, rows)
+        m = result["toy"]["ALL"]["answered_only"]
+        assert m["auroc"] is None
+        assert result["toy"]["ALL"]["auroc_status"] == "n/a"
+
+    def test_join_misses_counted_and_all_missing_is_fatal(self, tmp_path):
+        from guard_llama_guard import metrics
+        from guard_llama_guard.utils import FatalInputError
+        import pytest
+        records = [_toy_record(1, True)]
+        rows = [_toy_row(1, True), _toy_row(99, True)]
+        result, _ = self._evaluate(tmp_path, records, rows)
+        assert result["toy"]["join_misses"] == 1
+        ds = tmp_path / "ds2.jsonl"
+        go = tmp_path / "guard_output.none.jsonl"
+        _write_jsonl(ds, [_toy_record(1, True)])
+        _write_jsonl(go, [_toy_row(99, True)])
+        with pytest.raises(FatalInputError):
+            metrics.evaluate(ds, [go], tmp_path / "r2")
+
+    def test_cli_end_to_end_on_tiny_rule_run(self, tmp_path):
+        run_out = tmp_path / "run"
+        res = _run_main(["--profile", "core-minimal",
+                         "--input", "examples/tiny_unified.jsonl",
+                         "--out", str(run_out)])
+        assert res.returncode == 0, res.stderr
+        rep = tmp_path / "reports"
+        res2 = subprocess.run(
+            [sys.executable, "-m", "guard_llama_guard.metrics",
+             "--dataset", "examples/tiny_unified.jsonl",
+             "--guard-outputs", str(run_out),
+             "--out", str(rep)],
+            capture_output=True, text=True, cwd=str(SKILL_DIR), timeout=120)
+        assert res2.returncode == 0, res2.stderr
+        assert (rep / "summary.csv").is_file()
+        md = (rep / "summary.md").read_text(encoding="utf-8")
+        assert "unsafe_fpr_on_safe_probe" in md
+        # rule on tiny: TP=3 TN=2 FP=2 FN=0 -> acc 5/7, recall 1.0, probe FPR 1.0
+        result = json.loads((rep / "summary.json").read_text(encoding="utf-8"))
+        m = result["rule"]["ALL"]["answered_only"]
+        assert m["tp"] == 3 and m["tn"] == 2 and m["fp"] == 2 and m["fn"] == 0
+        assert m["unsafe_fpr_on_safe_probe"] == 1.0
+        assert m["auroc"] is None  # honest N/A for the rule baseline
