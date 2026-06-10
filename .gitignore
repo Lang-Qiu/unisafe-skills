@@ -64,3 +64,6 @@ Thumbs.db
 *.log
 
 # 注：M0_*.jsonl 是小体量手写样本，保留入库（不在上面被忽略的目录内）。
+
+# Claude Code 本地配置与安装的示例 skill(不入库)
+.claude/
