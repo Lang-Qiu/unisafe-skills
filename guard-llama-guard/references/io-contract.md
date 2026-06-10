@@ -71,7 +71,7 @@
 | `timestamp` | ISO 8601 |
 | `input` | `{path, n_records}` |
 | `guards` | `{requested: [...], completed: [...], failed: {name: reason}}` |
-| `counts` | `{total, eligible, predicted, errors, skipped: {out_of_scope, missing_content}}`——`predicted` = `is_unsafe` 非 null 的行数，`errors` = error 行数；多 guard 时 `predicted`/`errors` 为各 completed guard 之和，守恒式对**每个** guard 的 predictions 文件分别成立 |
+| `counts` | `{total, eligible, predicted, errors, skipped: {out_of_scope, missing_content}}`——`predicted` = `is_unsafe` 非 null 的行数，`errors` = error 行数，均统计**本次运行新写入**的行（`--resume` 命中的既有行不重复计数，故 resume 全命中时 predicted=0 而文件行数不变）；多 guard 时 `predicted`/`errors` 为各 completed guard 之和。守恒式（行数 = eligible）对**每个** completed guard 的 predictions **文件**始终成立，与是否 resume 无关 |
 | `resume_hits` / `resume_misses` / `resume_hit_rate` | 断点续跑计数（消融 17-E 数据源）：`hits` = 因输出中已存在而跳过重算的 eligible id 数；`misses` = 本次实际新预测数；`hit_rate = hits/(hits+misses)`（分母为 0 时取 0.0）。**始终写出**；未启用 `--resume` 时 `hits=0` |
 | `config` | CLI 参数回显（guards、limit、device、timeout_s、retries、batch_size、model_id、seed、resume、dry_run） |
 | `env` | `{python, platform, torch?, cuda?, model_revision?}`（未安装/不适用置 null） |

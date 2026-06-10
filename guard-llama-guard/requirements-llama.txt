@@ -1,0 +1,7 @@
+# guard-llama-guard - Core-Full layer: local Llama Guard 3-1B inference.
+# Install into a venv: python -m pip install -r requirements-llama.txt
+# Pins are validated during M1 Phase 2 GPU integration (task 12) and adjusted
+# there if the tested environment differs.
+torch>=2.3,<3.0
+transformers==4.46.3
+huggingface_hub==0.26.2

@@ -1,0 +1,9 @@
+# guard-llama-guard - Core-Minimal requirements
+#
+# Intentionally empty (comments only): the core loop (main.py --guards rule,
+# validate.py, metrics.py, all tests) is pure Python stdlib, Python >= 3.9.
+# `pip install -r requirements.txt` succeeds and installs nothing.
+#
+# Heavier paths live in separate layers:
+#   requirements-llama.txt  -> local Llama Guard 3 inference (Core-Full)
+#   requirements-api.txt    -> OpenAI Moderation baseline (Plus, optional)

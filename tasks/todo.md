@@ -16,14 +16,14 @@
 
 ## Phase 1 · Core-Minimal 闭环（只依赖 skill 内文件）
 
-- [ ] 任务 5：dry-run 链路 `utils.py`+`main.py` 骨架（eligible 计数）（M · 依赖 2,4）
-- [ ] 任务 6：guards 框架（capabilities+predict_batch 默认实现）+ rule 适配器 + 词表 + 测试（M · 依赖 3）
-- [ ] 任务 7：rule 预测落盘 + `--resume`（含 resume_hits/misses/hit_rate 计数）+ 黄金输出固化（S · 依赖 5,6）
-- [ ] 任务 8：`validate.py`（eligible 双向覆盖；`--metadata` 提供时才校验 skip 计数）+ 测试（S · 依赖 1,7）
-- [ ] 任务 9：`metrics.py` 双口径 + 四计数字段 + 测试（M · 依赖 3,7；fixtures 可提前）
-- [ ] 任务 10：SKILL.md v1 + README + requirements 三分层（S · 依赖 7,8,9）
+- [x] 任务 5：dry-run 链路 `utils.py`+`main.py` 骨架（eligible 计数）（M · 依赖 2,4）
+- [x] 任务 6：guards 框架（capabilities+predict_batch 默认实现）+ rule 适配器 + 词表 + 测试（M · 依赖 3）
+- [x] 任务 7：rule 预测落盘 + `--resume`（含 resume_hits/misses/hit_rate 计数）+ 黄金输出固化（S · 依赖 5,6）
+- [x] 任务 8：`validate.py`（eligible 双向覆盖；`--metadata` 提供时才校验 skip 计数）+ 测试（S · 依赖 1,7）
+- [x] 任务 9：`metrics.py` 双口径 + 四计数字段 + 测试（M · 依赖 3,7；fixtures 可提前）
+- [x] 任务 10：SKILL.md v1 + README + requirements 三分层（S · 依赖 7,8,9）
 
-### ☑ Checkpoint C1：干净环境 smoke（**固定 `--guards rule`，无 Plus/API guard**）<60s 全绿；unittest 全绿（无 key 用例自动 skip）；**smoke 截图存档**——**M1 交付唯一硬前置**
+### ☑ Checkpoint C1：技术项已全过（2026-06-11）——干净 venv（0 第三方包）smoke `--guards rule` 1s 全绿（main/validate/metrics 均 exit 0）；unittest 35 全绿；SKILL.md 152 行、指针全有效；`pip install -r requirements.txt` 零安装实证。**待办：smoke 终端截图存档（需人工）**——M1 交付唯一硬前置
 
 ## Phase 2 · Core-Full（与 Phase 3 并行；**失败不阻塞 C3**）
 

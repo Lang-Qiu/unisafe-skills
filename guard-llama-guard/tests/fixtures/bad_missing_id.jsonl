@@ -1,0 +1,1 @@
+{"guard":{"name":"rule","version":"1.0","modality":["text"]},"prediction":{"is_unsafe":true,"risk_categories":["violence"],"severity":null,"action":"refuse","confidence":null},"raw_output":{},"runtime":{"latency_ms":1.0,"cost":null,"device":"cpu"},"error":null}

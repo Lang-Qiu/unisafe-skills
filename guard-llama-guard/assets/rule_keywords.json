@@ -1,0 +1,15 @@
+{
+  "$comment": "Rule baseline word list v1. Keys MUST be canonical categories (references/category_mapping.json -> canonical_categories); matching is case-insensitive on word boundaries. Deliberately naive: homonym false positives (e.g. 'kill a process') are a documented design property, not a bug.",
+  "violence": ["kill", "murder", "shoot", "stab", "assault", "beat up", "bomb"],
+  "weapons": ["firearm", "firearms", "gun", "guns", "rifle", "explosive", "explosives", "ammunition", "weapon", "weapons"],
+  "cyber_safety": ["phishing", "malware", "ransomware", "keylogger", "ddos", "sql injection", "steal credentials", "login credentials", "crack a password"],
+  "self_harm": ["suicide", "self-harm", "kill myself", "hurt myself", "starve myself"],
+  "drugs": ["cocaine", "heroin", "fentanyl", "methamphetamine", "drug trafficking", "buy drugs"],
+  "hate_discrimination": ["racial slur", "ethnic cleansing", "hate speech", "white supremacy"],
+  "sexual_content": ["pornographic", "sexually explicit", "nude photos"],
+  "child_safety": ["child sexual", "csam", "groom a minor"],
+  "fraud_financial_crime": ["money laundering", "ponzi scheme", "counterfeit money", "credit card fraud", "scam"],
+  "illicit_behavior": ["shoplift", "burglary", "pick a lock", "evade police", "smuggle"],
+  "chemical_biological": ["nerve agent", "sarin", "anthrax", "bioweapon", "dirty bomb"],
+  "extremism_terrorism": ["terrorist attack", "join a terrorist", "extremist recruitment"]
+}

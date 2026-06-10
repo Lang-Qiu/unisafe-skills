@@ -1,0 +1,1 @@
+{"id":"bad:test:000002","guard":{"name":"rule","version":"1.0","modality":["text"]},"prediction":{"is_unsafe":null,"risk_categories":[],"severity":null,"action":"uncertain","confidence":null},"raw_output":{},"runtime":{"latency_ms":1.0,"cost":null,"device":"cpu"},"error":null}

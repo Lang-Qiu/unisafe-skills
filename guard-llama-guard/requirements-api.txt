@@ -1,0 +1,4 @@
+# guard-llama-guard - Plus layer (optional): OpenAI Moderation API baseline.
+# Needs OPENAI_API_KEY in the environment; without it the adapter reports
+# itself unavailable (guard-level failure), never a crash.
+openai>=1.40,<2.0
