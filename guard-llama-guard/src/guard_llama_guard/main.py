@@ -88,6 +88,12 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
                    help="opt-in EXPERIMENTAL pseudo score for the rule baseline")
     p.add_argument("--hf-token", default=None, help="HuggingFace token (gated models)")
     p.add_argument("--cache-dir", default=None, help="HF download cache dir")
+    p.add_argument("--prediction-cache-dir", default=None,
+                   help="versioned per-record prediction cache root "
+                        "(default: <skill>/.cache; key includes model revision, "
+                        "template, taxonomy and code versions)")
+    p.add_argument("--no-cache", action="store_true",
+                   help="disable the prediction cache (P2.F ablation)")
     p.add_argument("--backend", choices=["transformers", "vllm"], default="transformers")
     return p.parse_args(argv)
 
@@ -177,14 +183,51 @@ def run(args: argparse.Namespace) -> int:
             continue
 
         g_start = time.perf_counter()
-        routes, out_of_scope = [], 0
+        routes, out_of_scope, rec_by_id = [], 0, {}
         for rec in records:
             rt = utils.route(rec, guard.capabilities)
             if rt is None:
                 out_of_scope += 1
             else:
                 routes.append(rt)
-        rows = guard.predict_batch(routes)
+                rec_by_id[rec["id"]] = rec
+        # Versioned prediction cache (resume support): error rows are never
+        # cached, so an interrupted/failed record retries on the next run.
+        cache = None
+        if not args.no_cache:
+            cache_root = Path(args.prediction_cache_dir) if args.prediction_cache_dir \
+                else utils.SKILL_DIR / ".cache"
+            cache = utils.JsonCache(cache_root)
+        taxonomy_version = meta["versions"]["taxonomy_version"]
+        code_ver = meta["versions"]["code_version"]
+
+        def _key(rt):
+            return utils.cache_key(
+                record_id=rt.record_id,
+                record_hash=utils.record_hash(rec_by_id[rt.record_id]),
+                guard_name=name, model_id=guard.model_id,
+                model_revision=guard.model_revision,
+                prompt_template_version=guard.prompt_template_version,
+                taxonomy_version=taxonomy_version, code_version=code_ver,
+                confidence_method=guard.confidence_method)
+
+        rows_by_id: Dict[str, Dict[str, Any]] = {}
+        to_predict: List[Any] = []
+        if cache is not None:
+            for rt in routes:
+                hit = cache.get(name, _key(rt))
+                if hit is not None:
+                    rows_by_id[rt.record_id] = hit
+                else:
+                    to_predict.append(rt)
+        else:
+            to_predict = routes
+        for row in guard.predict_batch(to_predict):
+            rows_by_id[row["id"]] = row
+            if cache is not None and row["error"] is None:
+                rt = next(r for r in to_predict if r.record_id == row["id"])
+                cache.put(name, _key(rt), row)
+        rows = [rows_by_id[rt.record_id] for rt in routes]
         out_path = out_dir / f"guard_output.{name}.jsonl"
         with out_path.open("w", encoding="utf-8", newline="\n") as f:
             for row in rows:
@@ -200,7 +243,9 @@ def run(args: argparse.Namespace) -> int:
             "errors": errors,
             "coverage": round(answered / eligible, 4) if eligible else None,
             "error_rate": round(errors / eligible, 4) if eligible else None,
-            "cache_hits": 0, "cache_misses": 0, "cache_hit_rate": 0.0,
+            "cache_hits": cache.hits if cache else 0,
+            "cache_misses": cache.misses if cache else 0,
+            "cache_hit_rate": round(cache.hit_rate, 4) if cache else 0.0,
             "confidence_method": guard.confidence_method,
             "confidence_status": guard.confidence_status,
             "model_id": guard.model_id,

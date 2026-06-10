@@ -554,6 +554,38 @@ class TestMetricsV1:
         assert m["auroc"] is None  # honest N/A for the rule baseline
 
 
+class TestPredictionCache:
+    def test_second_run_hits_cache(self, tmp_path):
+        cache = tmp_path / "pcache"
+        common = ["--profile", "core-minimal",
+                  "--input", "examples/tiny_unified.jsonl",
+                  "--prediction-cache-dir", str(cache)]
+        res1 = _run_main(common + ["--out", str(tmp_path / "r1")])
+        assert res1.returncode == 0, res1.stderr
+        m1 = json.loads((tmp_path / "r1" / "metadata.json").read_text(encoding="utf-8"))
+        assert m1["guards"]["rule"]["cache_misses"] == 7
+        assert m1["guards"]["rule"]["cache_hits"] == 0
+        res2 = _run_main(common + ["--out", str(tmp_path / "r2")])
+        assert res2.returncode == 0, res2.stderr
+        m2 = json.loads((tmp_path / "r2" / "metadata.json").read_text(encoding="utf-8"))
+        assert m2["guards"]["rule"]["cache_hits"] == 7
+        assert m2["guards"]["rule"]["cache_misses"] == 0
+        rows = _read_jsonl(tmp_path / "r2" / "guard_output.rule.jsonl")
+        assert len(rows) == 7  # resume returns identical row count
+
+    def test_no_cache_disables_caching(self, tmp_path):
+        cache = tmp_path / "pcache"
+        res = _run_main(["--profile", "core-minimal",
+                         "--input", "examples/tiny_unified.jsonl",
+                         "--prediction-cache-dir", str(cache), "--no-cache",
+                         "--out", str(tmp_path / "r1")])
+        assert res.returncode == 0, res.stderr
+        meta = json.loads((tmp_path / "r1" / "metadata.json").read_text(encoding="utf-8"))
+        assert meta["guards"]["rule"]["cache_hits"] == 0
+        assert meta["guards"]["rule"]["cache_misses"] == 0
+        assert not cache.exists()
+
+
 class TestLlamaGuardAdapter:
     """Model-free unit tests: parsing, message building, category mapping,
     and the degradation path. Real inference is Core-Full (needs GPU + gated
