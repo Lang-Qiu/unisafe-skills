@@ -297,3 +297,111 @@ class TestRuleGuard:
         assert row["error"] and "kaboom" in row["error"]
         assert row["prediction"]["is_unsafe"] is None
         assert row["prediction"]["action"] == "uncertain"
+
+
+import subprocess
+import sys
+
+
+def _run_main(args, mode="module"):
+    if mode == "module":
+        cmd = [sys.executable, "-m", "guard_llama_guard.main"]
+    else:
+        cmd = [sys.executable, str(SKILL_DIR / "src" / "guard_llama_guard" / "main.py")]
+    return subprocess.run(cmd + args, capture_output=True, text=True,
+                          cwd=str(SKILL_DIR), timeout=120)
+
+
+def _read_jsonl(path):
+    with Path(path).open(encoding="utf-8") as f:
+        return [json.loads(line) for line in f if line.strip()]
+
+
+class TestMainRuleOnlyE2E:
+    def test_core_minimal_exit0_rows_equal_eligible(self, tmp_path):
+        out = tmp_path / "smoke"
+        res = _run_main(["--profile", "core-minimal",
+                         "--input", "examples/tiny_unified.jsonl",
+                         "--out", str(out)])
+        assert res.returncode == 0, res.stderr
+        rows = _read_jsonl(out / "guard_output.rule.jsonl")
+        assert len(rows) == 7  # eligible_total: 8 valid - 1 image out_of_scope
+        meta = json.loads((out / "metadata.json").read_text(encoding="utf-8"))
+        assert meta["raw_total"] == 8
+        assert meta["parsed_total"] == 8
+        assert meta["valid_total"] == 8
+        g = meta["guards"]["rule"]
+        assert g["eligible_total"] == 7
+        assert g["out_of_scope"] == 1
+        assert g["answered_total"] == 7
+        assert g["coverage"] == 1.0
+
+    def test_direct_path_mode_works_identically(self, tmp_path):
+        out = tmp_path / "smoke_b"
+        res = _run_main(["--profile", "core-minimal",
+                         "--input", "examples/tiny_unified.jsonl",
+                         "--out", str(out)], mode="direct")
+        assert res.returncode == 0, res.stderr
+        assert len(_read_jsonl(out / "guard_output.rule.jsonl")) == 7
+
+    def test_missing_input_is_exit3(self, tmp_path):
+        res = _run_main(["--profile", "core-minimal",
+                         "--input", "nope.jsonl", "--out", str(tmp_path / "x")])
+        assert res.returncode == 3
+
+    def test_all_invalid_records_is_exit3(self, tmp_path):
+        res = _run_main(["--profile", "core-minimal",
+                         "--input", "tests/fixtures/tiny_malformed.jsonl",
+                         "--out", str(tmp_path / "x")])
+        assert res.returncode == 3
+
+    def test_unknown_guard_name_is_exit3(self, tmp_path):
+        res = _run_main(["--guards", "definitely_not_a_guard",
+                         "--input", "examples/tiny_unified.jsonl",
+                         "--out", str(tmp_path / "x")])
+        assert res.returncode == 3
+
+    def test_mixed_input_skips_do_not_change_exit(self, tmp_path):
+        mixed = tmp_path / "mixed.jsonl"
+        mixed.write_text(TINY_PATH.read_text(encoding="utf-8")
+                         + MALFORMED_PATH.read_text(encoding="utf-8"),
+                         encoding="utf-8")
+        out = tmp_path / "out"
+        res = _run_main(["--profile", "core-minimal",
+                         "--input", str(mixed), "--out", str(out)])
+        assert res.returncode == 0, res.stderr
+        meta = json.loads((out / "metadata.json").read_text(encoding="utf-8"))
+        assert meta["valid_total"] == 8
+        assert sum(meta["skipped"].values()) >= 3
+        assert meta["guards"]["rule"]["eligible_total"] == 7
+
+    def test_required_guard_load_failure_is_exit2(self, tmp_path):
+        # llama_guard is a KNOWN guard whose deps (torch/transformers) are not
+        # installed in the core env -> load fails -> required -> exit 2 + FIX hint.
+        res = _run_main(["--guards", "llama_guard",
+                         "--input", "examples/tiny_unified.jsonl",
+                         "--out", str(tmp_path / "x")])
+        assert res.returncode == 2
+        assert "FIX" in (res.stderr + res.stdout)
+
+    def test_allow_missing_demotes_required_to_skip(self, tmp_path):
+        out = tmp_path / "out"
+        res = _run_main(["--profile", "core-full",
+                         "--allow-missing-guards", "llama_guard",
+                         "--input", "examples/tiny_unified.jsonl",
+                         "--out", str(out)])
+        assert res.returncode == 0, res.stderr
+        meta = json.loads((out / "metadata.json").read_text(encoding="utf-8"))
+        assert "llama_guard" in meta["skipped_guards"]
+        assert (out / "guard_output.rule.jsonl").is_file()
+
+    def test_max_samples_limits_valid_records(self, tmp_path):
+        out = tmp_path / "out"
+        res = _run_main(["--profile", "core-minimal", "--max-samples", "3",
+                         "--input", "examples/tiny_unified.jsonl",
+                         "--out", str(out)])
+        assert res.returncode == 0, res.stderr
+        meta = json.loads((out / "metadata.json").read_text(encoding="utf-8"))
+        assert meta["valid_total"] == 3
+        rows = _read_jsonl(out / "guard_output.rule.jsonl")
+        assert len(rows) == meta["guards"]["rule"]["eligible_total"]

@@ -324,6 +324,10 @@ def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def json_dumps(obj: Any) -> str:
+    return json.dumps(obj, ensure_ascii=False, default=str)
+
+
 def write_metadata(path: Path | str, meta: Dict[str, Any]) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
