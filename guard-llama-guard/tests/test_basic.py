@@ -125,3 +125,99 @@ class TestTinyDataset:
                 valid_json_bad_schema += 1
         assert parse_fail >= 1, "need a malformed-JSON line"
         assert valid_json_bad_schema >= 1, "need a schema-invalid record"
+
+
+TEXT_CAPS = {"modalities": ["text"],
+             "tasks": ["prompt_only_safety", "prompt_response_safety"]}
+
+
+class TestUtils:
+    def test_load_valid_records_clean_file(self):
+        from guard_llama_guard import utils
+        records, skipped = utils.load_valid_records(TINY_PATH)
+        assert len(records) == 8
+        assert sum(skipped.values()) == 0
+
+    def test_load_valid_records_counts_all_skip_kinds(self):
+        from guard_llama_guard import utils
+        records, skipped = utils.load_valid_records(MALFORMED_PATH)
+        assert records == []
+        assert skipped["malformed_json"] >= 1
+        assert skipped["schema_invalid"] >= 1
+        assert skipped["blank"] >= 1
+
+    def test_missing_file_is_fatal(self):
+        from guard_llama_guard import utils
+        import pytest
+        with pytest.raises(utils.FatalInputError):
+            utils.load_valid_records(SKILL_DIR / "nope.jsonl")
+
+    def test_validate_record_rejects_bad_records(self):
+        from guard_llama_guard import utils
+        ok, _ = utils.validate_record({"id": "x"})
+        assert not ok
+        bad_bool = {"id": "x", "source": {"dataset": "d"}, "task_type": "prompt_only_safety",
+                    "content": {"prompt": "hi"},
+                    "label": {"target": "prompt", "is_unsafe": "unsafe",
+                              "policy_action": "refuse", "canonical_categories": []}}
+        ok, reason = utils.validate_record(bad_bool)
+        assert not ok and "is_unsafe" in reason
+        empty_images = {"id": "x", "source": {"dataset": "d"}, "task_type": "image_safety",
+                        "content": {"prompt": None, "images": []},
+                        "label": {"target": "image", "is_unsafe": False,
+                                  "policy_action": "allow", "canonical_categories": []}}
+        ok, reason = utils.validate_record(empty_images)
+        assert not ok
+
+    def test_route_text_records_and_image_out_of_scope(self):
+        from guard_llama_guard import utils
+        records, _ = utils.load_valid_records(TINY_PATH)
+        routes = [utils.route(r, TEXT_CAPS) for r in records]
+        eligible = [rt for rt in routes if rt is not None]
+        assert len(eligible) == 7  # 8 records, image one is out of scope for text caps
+        pair = next(rt for r, rt in zip(records, routes)
+                    if rt and r["task_type"] == "prompt_response_safety")
+        assert pair.prompt and pair.response
+
+    def test_build_guard_output_schema(self):
+        from guard_llama_guard import utils
+        row = utils.build_guard_output(
+            record_id="tiny:test:000001",
+            guard_name="rule", guard_version="0.1.0", modalities=["text"],
+            prediction={"is_unsafe": True, "risk_categories": ["violence"],
+                        "confidence": None},
+            raw_output={"matched_keywords": ["kill"]}, latency_ms=1, device="cpu")
+        assert set(row) == {"id", "guard", "prediction", "raw_output", "runtime", "error"}
+        assert row["error"] is None
+        p = row["prediction"]
+        assert set(p) >= {"is_unsafe", "risk_categories", "severity", "action",
+                          "confidence", "confidence_method"}
+        assert p["action"] == "refuse"
+        err_row = utils.build_guard_output(
+            record_id="tiny:test:000002", guard_name="rule", guard_version="0.1.0",
+            modalities=["text"], error="boom")
+        assert err_row["prediction"]["is_unsafe"] is None
+        assert err_row["error"] == "boom"
+        assert err_row["prediction"]["action"] == "uncertain"
+
+    def test_cache_key_is_versioned(self):
+        from guard_llama_guard import utils
+        base = dict(record_id="a", record_hash="h", guard_name="rule",
+                    model_id="m", model_revision="r1", prompt_template_version="t1",
+                    taxonomy_version="x1", code_version="c1", confidence_method="cm")
+        k1 = utils.cache_key(**base)
+        k2 = utils.cache_key(**{**base, "model_revision": "r2"})
+        assert k1 != k2
+        assert k1 == utils.cache_key(**base)
+
+    def test_cache_roundtrip(self, tmp_path):
+        from guard_llama_guard import utils
+        cache = utils.JsonCache(tmp_path)
+        assert cache.get("rule", "k1") is None
+        cache.put("rule", "k1", {"x": 1})
+        assert cache.get("rule", "k1") == {"x": 1}
+
+    def test_explain_load_error_mentions_fix(self):
+        from guard_llama_guard import utils
+        msg = utils.explain_load_error("llama_guard", Exception("401 gated repo"))
+        assert "FIX" in msg and "huggingface" in msg.lower()
