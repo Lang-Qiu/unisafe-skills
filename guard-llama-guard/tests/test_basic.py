@@ -221,3 +221,79 @@ class TestUtils:
         from guard_llama_guard import utils
         msg = utils.explain_load_error("llama_guard", Exception("401 gated repo"))
         assert "FIX" in msg and "huggingface" in msg.lower()
+
+
+def _tiny_routes(caps):
+    from guard_llama_guard import utils
+    records, _ = utils.load_valid_records(TINY_PATH)
+    pairs = [(r, utils.route(r, caps)) for r in records]
+    return [(r, rt) for r, rt in pairs if rt is not None]
+
+
+class TestRuleGuard:
+    def _guard(self, **kw):
+        from guard_llama_guard.guards.rule_based import RuleGuard
+        g = RuleGuard(**kw)
+        g.load()
+        return g
+
+    def test_capabilities_are_honest(self):
+        g = self._guard()
+        caps = g.capabilities
+        assert caps["refusal"] is False
+        assert caps["continuous_score"] is False
+        assert caps["modalities"] == ["text"]
+
+    def test_predictions_on_tiny(self):
+        g = self._guard()
+        verdicts = {}
+        for rec, rt in _tiny_routes(g.capabilities):
+            row = g.predict(rt)
+            assert row["error"] is None
+            verdicts[rec["id"]] = row["prediction"]
+        assert verdicts["tiny:test:000001"]["is_unsafe"] is False  # study tips
+        assert verdicts["tiny:test:000002"]["is_unsafe"] is True   # phishing
+        assert "cyber_safety" in verdicts["tiny:test:000002"]["risk_categories"]
+        assert verdicts["tiny:test:000003"]["is_unsafe"] is False  # refused lockpick
+        assert verdicts["tiny:test:000004"]["is_unsafe"] is True   # firearm pair
+        assert {"weapons", "illicit_behavior"} <= set(
+            verdicts["tiny:test:000004"]["risk_categories"])
+        assert verdicts["tiny:test:000006"]["is_unsafe"] is True   # probe FP by design
+        assert verdicts["tiny:test:000007"]["is_unsafe"] is True   # hotwire jailbreak
+
+    def test_no_confidence_by_default_but_experimental_score_optin(self):
+        g = self._guard()
+        routes = [rt for _, rt in _tiny_routes(g.capabilities)]
+        row = g.predict(routes[1])  # phishing record
+        assert row["prediction"]["confidence"] is None
+        gs = self._guard(score_mode=True)
+        row = gs.predict(routes[1])
+        c = row["prediction"]["confidence"]
+        assert c is not None and 0.0 <= c <= 1.0
+        assert "experimental" in row["prediction"]["confidence_method"]
+
+    def test_predict_batch_default_loops(self):
+        g = self._guard()
+        routes = [rt for _, rt in _tiny_routes(g.capabilities)]
+        rows = g.predict_batch(routes)
+        assert len(rows) == len(routes) == 7
+
+    def test_per_record_exception_becomes_error_row(self):
+        from guard_llama_guard.guards.base import Guard
+
+        class BoomGuard(Guard):
+            name = "boom"
+            version = "0"
+            capabilities = {"refusal": False, "continuous_score": False,
+                            "modalities": ["text"],
+                            "tasks": ["prompt_only_safety", "prompt_response_safety"]}
+
+            def _predict_one(self, route):
+                raise RuntimeError("kaboom")
+
+        g = BoomGuard()
+        routes = [rt for _, rt in _tiny_routes(g.capabilities)]
+        row = g.predict(routes[0])
+        assert row["error"] and "kaboom" in row["error"]
+        assert row["prediction"]["is_unsafe"] is None
+        assert row["prediction"]["action"] == "uncertain"
