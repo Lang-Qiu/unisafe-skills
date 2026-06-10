@@ -5,6 +5,8 @@ InfoSec-example-skills/
 # ---- 数据集 / 输出产物（体量大，不入库；从原始来源获取）----
 data/
 **/data/
+runs/
+**/runs/
 outputs/
 output/
 raw/
