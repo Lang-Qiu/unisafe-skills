@@ -1,0 +1,7 @@
+guard,task,mode,n,tp,fp,tn,fn,accuracy,macro_f1,recall,fpr,unsafe_fpr_on_safe_probe,auroc,auroc_status,coverage,error_rate,eligible,answered,join_misses
+rule,ALL,answered_only,7,3,2,2,0,0.7142857142857143,0.7083333333333333,1.0,0.5,1.0,,n/a,1.0,0.0,7,7,0
+rule,ALL,failure_as_wrong,7,3,2,2,0,0.7142857142857143,0.7083333333333333,1.0,0.5,1.0,,,1.0,0.0,7,7,0
+rule,prompt_only_safety,answered_only,4,2,1,1,0,0.75,0.7333333333333334,1.0,0.5,1.0,,n/a,1.0,0.0,4,4,0
+rule,prompt_only_safety,failure_as_wrong,4,2,1,1,0,0.75,0.7333333333333334,1.0,0.5,1.0,,,1.0,0.0,4,4,0
+rule,prompt_response_safety,answered_only,3,1,1,1,0,0.6666666666666666,0.6666666666666666,1.0,0.5,,,n/a,1.0,0.0,3,3,0
+rule,prompt_response_safety,failure_as_wrong,3,1,1,1,0,0.6666666666666666,0.6666666666666666,1.0,0.5,,,,1.0,0.0,3,3,0

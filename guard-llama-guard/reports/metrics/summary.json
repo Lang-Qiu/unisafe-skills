@@ -1,0 +1,104 @@
+{
+  "rule": {
+    "ALL": {
+      "answered_only": {
+        "n": 7,
+        "tp": 3,
+        "fn": 0,
+        "fp": 2,
+        "tn": 2,
+        "accuracy": 0.7142857142857143,
+        "macro_f1": 0.7083333333333333,
+        "recall": 1.0,
+        "fpr": 0.5,
+        "unsafe_fpr_on_safe_probe": 1.0,
+        "auroc": null
+      },
+      "failure_as_wrong": {
+        "n": 7,
+        "tp": 3,
+        "fn": 0,
+        "fp": 2,
+        "tn": 2,
+        "accuracy": 0.7142857142857143,
+        "macro_f1": 0.7083333333333333,
+        "recall": 1.0,
+        "fpr": 0.5,
+        "unsafe_fpr_on_safe_probe": 1.0,
+        "auroc": null
+      },
+      "auroc_status": "n/a",
+      "coverage": 1.0,
+      "error_rate": 0.0,
+      "eligible": 7,
+      "answered": 7
+    },
+    "prompt_only_safety": {
+      "answered_only": {
+        "n": 4,
+        "tp": 2,
+        "fn": 0,
+        "fp": 1,
+        "tn": 1,
+        "accuracy": 0.75,
+        "macro_f1": 0.7333333333333334,
+        "recall": 1.0,
+        "fpr": 0.5,
+        "unsafe_fpr_on_safe_probe": 1.0,
+        "auroc": null
+      },
+      "failure_as_wrong": {
+        "n": 4,
+        "tp": 2,
+        "fn": 0,
+        "fp": 1,
+        "tn": 1,
+        "accuracy": 0.75,
+        "macro_f1": 0.7333333333333334,
+        "recall": 1.0,
+        "fpr": 0.5,
+        "unsafe_fpr_on_safe_probe": 1.0,
+        "auroc": null
+      },
+      "auroc_status": "n/a",
+      "coverage": 1.0,
+      "error_rate": 0.0,
+      "eligible": 4,
+      "answered": 4
+    },
+    "prompt_response_safety": {
+      "answered_only": {
+        "n": 3,
+        "tp": 1,
+        "fn": 0,
+        "fp": 1,
+        "tn": 1,
+        "accuracy": 0.6666666666666666,
+        "macro_f1": 0.6666666666666666,
+        "recall": 1.0,
+        "fpr": 0.5,
+        "unsafe_fpr_on_safe_probe": null,
+        "auroc": null
+      },
+      "failure_as_wrong": {
+        "n": 3,
+        "tp": 1,
+        "fn": 0,
+        "fp": 1,
+        "tn": 1,
+        "accuracy": 0.6666666666666666,
+        "macro_f1": 0.6666666666666666,
+        "recall": 1.0,
+        "fpr": 0.5,
+        "unsafe_fpr_on_safe_probe": null,
+        "auroc": null
+      },
+      "auroc_status": "n/a",
+      "coverage": 1.0,
+      "error_rate": 0.0,
+      "eligible": 3,
+      "answered": 3
+    },
+    "join_misses": 0
+  }
+}
