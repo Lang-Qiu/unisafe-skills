@@ -127,6 +127,37 @@ class TestRuleGuardAuroc(unittest.TestCase):
             shutil.rmtree(tmp, ignore_errors=True)
 
 
+class TestMetricsSampleGolden(unittest.TestCase):
+    """examples/metrics.sample.json is the frozen metrics output for the
+    golden rule predictions on examples/input.sample.jsonl. Metrics are fully
+    deterministic, so the lock is exact."""
+
+    def test_sample_matches_fresh_run(self):
+        tmp = Path(tempfile.mkdtemp(prefix="guard-metrics-sample-"))
+        try:
+            code, out = run_metrics([
+                "--predictions", str(EXAMPLES / "output.sample.jsonl"),
+                "--dataset", str(EXAMPLES / "input.sample.jsonl"),
+                "--output-dir", str(tmp),
+            ])
+            self.assertEqual(code, 0, out)
+            with open(tmp / "metrics.json", encoding="utf-8") as fh:
+                fresh = json.load(fh)
+            with open(EXAMPLES / "metrics.sample.json", encoding="utf-8") as fh:
+                frozen = json.load(fh)
+            self.assertEqual(fresh, frozen)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_sample_probe_fields(self):
+        with open(EXAMPLES / "metrics.sample.json", encoding="utf-8") as fh:
+            probe = json.load(fh)["rule"]["buckets"]["over_refusal_probe"]
+        self.assertAlmostEqual(probe["over_refusal_rate"]["answered_only"], 1.0)
+        self.assertTrue(probe["low_sample_warning"])
+        for key in ("eligible_total", "answered_total", "coverage", "error_rate"):
+            self.assertIn(key, probe)
+
+
 class TestLoudRefusals(unittest.TestCase):
     def test_reserved_flags_exit_1(self):
         for flag in ("--by-category", "--adversarial-split"):

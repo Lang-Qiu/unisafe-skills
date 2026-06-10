@@ -9,9 +9,10 @@ from __future__ import annotations
 import importlib
 from typing import List
 
-# name -> (module, class). llama-guard lands in task 11, openai in task 14.
 _REGISTRY = {
     "rule": ("guards.rule_based", "RuleGuard"),
+    "llama-guard": ("guards.llama_guard", "LlamaGuard"),
+    "openai": ("guards.openai_moderation", "OpenAIModerationGuard"),
 }
 
 
@@ -19,11 +20,13 @@ def known_guards() -> List[str]:
     return sorted(_REGISTRY)
 
 
-def get_adapter(name: str):
+def get_adapter(name: str, config=None):
+    """config: CLI-derived dict (device/timeout_s/retries/model_id/hf_token...);
+    adapters take what they need and ignore the rest."""
     if name not in _REGISTRY:
         raise KeyError(
             f"unknown guard {name!r}; known guards: {', '.join(known_guards())}"
         )
     module_name, class_name = _REGISTRY[name]
     module = importlib.import_module(module_name)
-    return getattr(module, class_name)()
+    return getattr(module, class_name)(config)

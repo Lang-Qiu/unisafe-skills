@@ -74,9 +74,11 @@ def _probe_env(requested: List[str]) -> Dict[str, Any]:
         try:
             import torch  # type: ignore
 
-            env["torch"] = torch.__version__
-            env["cuda"] = bool(torch.cuda.is_available())
-        except ImportError:
+            # a broken/namespace torch import may succeed yet lack attributes
+            env["torch"] = getattr(torch, "__version__", None)
+            cuda = getattr(torch, "cuda", None)
+            env["cuda"] = bool(cuda.is_available()) if cuda is not None else None
+        except Exception:
             pass
     return env
 
@@ -160,40 +162,61 @@ def main(argv: Optional[List[str]] = None) -> int:
                 failed[name] = f"unknown guard (known: {', '.join(known_guards())})"
                 print(f"WARNING: skipping unknown guard {name!r}")
 
+            adapter_config = {
+                "device": args.device,
+                "timeout_s": args.timeout_s,
+                "retries": args.retries,
+                "batch_size": args.batch_size,
+                "model_id": args.model_id,
+                "hf_token": args.hf_token,
+                "seed": args.seed,
+            }
             predictions_dir = output_dir / "predictions"
             for name in requested:
                 if name in failed:
                     continue
-                adapter = get_adapter(name)
+                adapter = get_adapter(name, adapter_config)
                 ok, reason = adapter.available()
                 if not ok:
                     failed[name] = reason
                     print(f"GUARD-FAILURE [{name}]: {reason}")
-                    print(f"FIX: resolve the cause above, then re-run with --guards {name}")
+                    if "FIX:" not in reason:
+                        print(f"FIX: resolve the cause above, then re-run with --guards {name}")
                     continue
                 predictions_dir.mkdir(parents=True, exist_ok=True)
                 pred_path = predictions_dir / f"{name}.predictions.jsonl"
                 existing_ids = _load_existing_ids(pred_path) if args.resume else set()
                 mode = "a" if (args.resume and pred_path.exists()) else "w"
+                pending = []
+                for record in eligible:
+                    if record.get("id") in existing_ids:
+                        resume_hits += 1
+                    else:
+                        pending.append(record)
+                use_batch = adapter.capabilities.get("supports_batch") and args.batch_size > 1
+                chunk_size = args.batch_size if use_batch else 1
                 with open(pred_path, mode, encoding="utf-8", newline="\n") as fh:
-                    for record in eligible:
-                        if record.get("id") in existing_ids:
-                            resume_hits += 1
-                            continue
+                    for start in range(0, len(pending), chunk_size):
+                        chunk = pending[start:start + chunk_size]
                         try:
-                            result = adapter.predict(record)
-                        except Exception as exc:  # record-level error: write the row, keep going
-                            result = adapter.make_result(
-                                record, is_unsafe=None,
-                                error=f"{type(exc).__name__}: {exc}",
-                            )
-                        resume_misses += 1
-                        if result["prediction"]["is_unsafe"] is None:
-                            errors += 1
-                        else:
-                            predicted += 1
-                        write_jsonl_line(fh, result)
-                        fh.flush()  # line-level durability: a crash keeps finished work
+                            results = (adapter.predict_batch(chunk) if use_batch
+                                       else [adapter.predict(chunk[0])])
+                        except Exception as exc:  # record-level error rows; keep going
+                            results = [
+                                adapter.make_result(
+                                    record, is_unsafe=None,
+                                    error=f"{type(exc).__name__}: {exc}",
+                                )
+                                for record in chunk
+                            ]
+                        for result in results:
+                            resume_misses += 1
+                            if result["prediction"]["is_unsafe"] is None:
+                                errors += 1
+                            else:
+                                predicted += 1
+                            write_jsonl_line(fh, result)
+                        fh.flush()  # chunk-level durability: a crash keeps finished work
                 completed.append(name)
                 print(f"guard {name}: wrote {pred_path}")
 

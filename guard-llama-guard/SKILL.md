@@ -52,8 +52,8 @@ python scripts/metrics.py --predictions out_smoke/predictions --dataset examples
 PowerShell: identical commands (paths use `/` fine; no glob expansion needed — pass
 files or directories, never wildcards).
 
-Full (Core-Full, GPU + HF gated access; adapter lands in M1 Phase 2 — until then
-`--guards llama-guard` exits 1 as an unknown guard):
+Full (Core-Full; needs GPU + accepted HF license + `hf auth login` — without them
+you get the documented degradation: exit 2 alongside rule, exit 1 alone, with a `FIX:` hint):
 
 ```bash
 python -m venv .venv && . .venv/Scripts/activate   # PowerShell: .venv\Scripts\Activate.ps1

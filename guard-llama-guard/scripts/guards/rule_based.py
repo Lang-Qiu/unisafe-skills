@@ -28,7 +28,10 @@ class RuleGuard(GuardAdapter):
     version = "1.0"
     modality = ["text"]
 
-    def __init__(self, keywords_path: Optional[Path] = None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None,
+                 keywords_path: Optional[Path] = None):
+        # config (CLI dict) is accepted for registry uniformity; the rule
+        # baseline needs nothing from it
         path = Path(keywords_path) if keywords_path else KEYWORDS_PATH
         with open(path, encoding="utf-8") as fh:
             raw = json.load(fh)

@@ -27,18 +27,18 @@
 
 ## Phase 2 · Core-Full（与 Phase 3 并行；**失败不阻塞 C3**）
 
-- [ ] 任务 11：llama_guard.py（spike 前置；predict_batch 真批）（M · 依赖 C1）
-- [ ] 任务 12：gated/GPU 联调 + 降级实测（§9-J/N）（S · 依赖 11）
+- [ ] 任务 11：llama_guard.py（spike 前置；predict_batch 真批）（M · 依赖 C1）——代码+spike②(软超时设计)+notes 已交付；spike①(verdict token ids) 与推理实测**待 HF gated 审批**（403 实录在 notes）
+- [ ] 任务 12：gated/GPU 联调 + 降级实测（§9-J/N）（S · 依赖 11）——降级三判例已实测 ✅（缺依赖→2/单独跑→1/真 403→2+FIX 三步+rule 完好）；正向路径待审批
 - [ ] 任务 13：第一版指标 `--limit 200` + E2E 截图（有 fallback 链）（S · 依赖 12；甲数据可选）
 
 ### ☑ Checkpoint C2：§9-J 全勾；metrics 矩阵；metrics-definitions 发甲（#4）——未达 → N/A 进 M1_summary，C3 照常
 
 ## Phase 3 · Plus（C1 后并行；可整体顺延 M2）
 
-- [ ] 任务 14：API Guard 基线适配器（OpenAI Moderation；无 key 即 N/A，不进 smoke/默认 CI）（S · 依赖 C1）
-- [ ] 任务 15：over-refusal 正式化 + report 模板 + metrics 样例（S · 依赖 9）
-- [ ] 任务 16：trigger eval 一轮（实测或文档化判定；负例发甲 #3）（S · 依赖 10）
-- [ ] 任务 17：性能消融 A–G（E=resume/idempotence；E/F/G 零依赖先行；B/C/D 可 N/A）（M · 依赖 9；11/14 软依赖）
+- [x] 任务 14：API Guard 基线适配器（OpenAI Moderation；无 key 即 N/A，不进 smoke/默认 CI）（S · 依赖 C1）——适配器+隔离测试 ✅；**有 key 实测档 N/A（用户代理端点无 /moderations，404 实测 → 顺延 M2/换真 OpenAI key）**；live 测试显式 opt-in（OPENAI_MODERATION_LIVE=1）
+- [x] 任务 15：over-refusal 正式化 + report 模板 + metrics 样例（S · 依赖 9）——metrics.sample.json 黄金锁定测试 + report-section.md 占位符与字段一一对应
+- [x] 任务 16：trigger eval 一轮（实测或文档化判定；负例发甲 #3）（S · 依赖 10）——文档化判定档（8 正例+6 负例，标注未实测，含实测协议与达标线）；实测顺延 C3 前/M2
+- [x] 任务 17：性能消融 A–G（E=resume/idempotence；E/F/G 零依赖先行；B/C/D 可 N/A）（M · 依赖 9；11/14 软依赖）——E/F/G 实测 ✅（resume 3.6×+幂等 hash 一致；畸形行恢复；懒 import 0 启动差/4.6GB 依赖差）；A–D N/A(gated 审批/无 moderation 端点 → 顺延)
 
 ## Phase 4 · 验收交付（硬前置仅 C1）
 
