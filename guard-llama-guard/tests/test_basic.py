@@ -586,6 +586,31 @@ class TestPredictionCache:
         assert not cache.exists()
 
 
+class TestPackagingExamples:
+    def test_input_example_records_are_schema_valid(self):
+        from guard_llama_guard import utils
+        records, skipped = utils.load_valid_records(
+            SKILL_DIR / "examples" / "input_example.jsonl")
+        assert records and sum(skipped.values()) == 0
+
+    def test_output_example_rows_match_guard_output_schema(self):
+        rows = _read_jsonl(SKILL_DIR / "examples" / "output_example.jsonl")
+        assert rows
+        for row in rows:
+            assert set(row) == {"id", "guard", "prediction", "raw_output",
+                                "runtime", "error"}
+            assert set(row["prediction"]) >= {"is_unsafe", "risk_categories",
+                                              "action", "confidence"}
+
+    def test_readme_covers_the_operational_contract(self):
+        text = (SKILL_DIR / "README.md").read_text(encoding="utf-8")
+        for needle in ("requirements-core.txt", "exit 0", "exit 2", "exit 3",
+                       "--allow-missing-guards", "hf-mirror",
+                       "guard_llama_guard.main", "guard_llama_guard.metrics",
+                       "index-url"):
+            assert needle in text, f"README missing: {needle}"
+
+
 class TestLlamaGuardAdapter:
     """Model-free unit tests: parsing, message building, category mapping,
     and the degradation path. Real inference is Core-Full (needs GPU + gated
