@@ -1,0 +1,7 @@
+# Assignment-template entry file. Core-Minimal profile only needs this:
+-r requirements-core.txt
+# Layered extras (install on demand):
+#   requirements-llama.txt      -> Llama Guard 3 (Core-Full; see README for torch/CUDA note)
+#   requirements-llm-judge.txt  -> LLM-as-judge extension (OpenAI-compatible API)
+#   requirements-wildguard.txt  -> WildGuard extension
+#   requirements-vllm.txt       -> optional vLLM backend (not a default dependency)

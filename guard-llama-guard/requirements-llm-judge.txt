@@ -1,0 +1,2 @@
+# Extension E1: LLM-as-judge via an OpenAI-compatible endpoint (LLM_API_KEY / LLM_BASE_URL / LLM_MODEL).
+openai>=1.40,<3

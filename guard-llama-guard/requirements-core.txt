@@ -1,0 +1,2 @@
+# Core-Minimal: the pipeline itself is pure stdlib; pytest is only for the test suite.
+pytest>=8,<10

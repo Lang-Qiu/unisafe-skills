@@ -1,0 +1,4 @@
+# Extension E2: WildGuard 7B (local, gated: allenai/wildguard). Same torch note as requirements-llama.txt.
+torch>=2.2
+transformers>=4.43,<5
+accelerate>=0.30

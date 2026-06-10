@@ -1,0 +1,58 @@
+# Skill manifest — guard-llama-guard
+name: guard-llama-guard
+version: 0.1.0
+type: guard-skill
+modality: [text]            # image path is an Extension (LLM-judge, M3)
+python_package: guard_llama_guard   # underscores; dir name keeps the hyphen
+
+entrypoints:
+  run: "python -m guard_llama_guard.main"          # or: python src/guard_llama_guard/main.py
+  metrics: "python -m guard_llama_guard.metrics"
+  tests: "python -m pytest tests/ -q"
+
+contracts:
+  input: "unified safety JSONL — references/schema.md §Input"
+  output: "unified guard-result JSONL — references/schema.md §Guard output"
+  metadata: "references/schema.md §Metadata"
+  exit_codes: {ok: 0, required_guard_failed: 2, fatal_prerun: 3}
+
+guards:
+  rule:        {tier: core-minimal, deps: requirements-core.txt}
+  llama_guard: {tier: core-full,    deps: requirements-llama.txt, gated: meta-llama/Llama-Guard-3-1B}
+  llm_judge:   {tier: extension,    deps: requirements-llm-judge.txt}
+  wildguard:   {tier: extension,    deps: requirements-wildguard.txt, gated: allenai/wildguard}
+
+files:
+  - SKILL.md
+  - manifest.yaml
+  - README.md
+  - pyproject.toml
+  - requirements.txt            # aggregator -> requirements-core.txt
+  - requirements-core.txt
+  - requirements-llama.txt
+  - requirements-llm-judge.txt
+  - requirements-wildguard.txt
+  - requirements-dev.txt
+  - requirements-vllm.txt       # optional backend
+  - config/category_mapping.json
+  - references/INDEX.md
+  - references/schema.md
+  - references/optimization_notes.md   # produced in Plus P2
+  - references/trigger_eval.md         # produced in Plus P3
+  - src/guard_llama_guard/__init__.py
+  - src/guard_llama_guard/utils.py
+  - src/guard_llama_guard/main.py
+  - src/guard_llama_guard/metrics.py
+  - src/guard_llama_guard/guards/__init__.py
+  - src/guard_llama_guard/guards/base.py
+  - src/guard_llama_guard/guards/rule_based.py
+  - src/guard_llama_guard/guards/llama_guard.py        # Core-Full
+  - src/guard_llama_guard/guards/llm_judge.py          # Extension
+  - src/guard_llama_guard/guards/wildguard.py          # Extension
+  - examples/tiny_unified.jsonl
+  - examples/input_example.jsonl
+  - examples/output_example.jsonl
+  - tests/test_basic.py
+  - tests/test_trigger.py              # Plus P3a
+  - tests/fixtures/tiny_malformed.jsonl
+  - reports/M1_summary.md              # produced at C10

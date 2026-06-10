@@ -1,0 +1,4 @@
+# OPTIONAL backend (Extension E4) — never a default dependency.
+# vLLM has no native Windows support (use WSL/Linux); without it the skill
+# automatically falls back to the transformers backend.
+vllm>=0.6
