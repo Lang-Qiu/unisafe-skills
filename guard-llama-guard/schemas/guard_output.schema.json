@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "guard_output.schema.json",
+  "title": "Guard output record (one JSONL line)",
+  "description": "Single guard prediction record, per M0_接口约定.md §5 / M1_SPEC.md §5.2. One line per eligible input record; record-level errors keep their line with prediction.is_unsafe=null and a non-null error string (conservation: lines = total - skipped).",
+  "type": "object",
+  "required": ["id", "guard", "prediction", "raw_output", "runtime", "error"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Verbatim copy of the dataset record id (join key), e.g. 'wildguardmix:test:000001'."
+    },
+    "guard": {
+      "type": "object",
+      "required": ["name", "version", "modality"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": ["string", "null"] },
+        "modality": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "enum": ["text", "image", "video", "audio"] }
+        }
+      }
+    },
+    "prediction": {
+      "type": "object",
+      "required": ["is_unsafe", "risk_categories", "severity", "action", "confidence"],
+      "properties": {
+        "is_unsafe": {
+          "type": ["boolean", "null"],
+          "description": "Boolean verdict. null is only legal for record-level errors (then 'error' must be a non-empty string); a string like \"unsafe\" is always illegal."
+        },
+        "risk_categories": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/canonicalCategory" },
+          "description": "Already mapped to the 22 canonical categories (+ 'other'); guard-native labels stay in raw_output."
+        },
+        "severity": { "type": ["integer", "null"], "minimum": 0 },
+        "action": {
+          "enum": ["allow", "refuse", "safe_complete", "warn", "redirect", "escalate", "uncertain"]
+        },
+        "confidence": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Continuous score for AUROC; null when the guard has none (e.g. rule baseline) — such records are excluded from AUROC only."
+        }
+      }
+    },
+    "raw_output": {
+      "type": "object",
+      "description": "Guard-native output preserved verbatim (free-form object)."
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["latency_ms", "cost", "device"],
+      "properties": {
+        "latency_ms": { "type": "number", "minimum": 0 },
+        "cost": { "type": ["number", "null"] },
+        "device": { "type": "string" }
+      }
+    },
+    "error": {
+      "type": ["string", "null"],
+      "description": "null on success; human-readable reason on record-level error (timeout / empty output / parse failure)."
+    }
+  },
+  "allOf": [
+    {
+      "$comment": "Bidirectional constraint: prediction.is_unsafe=null <=> error is a non-empty string. Rejects orphan errors (is_unsafe=null with error=null) and inconsistent successes (is_unsafe set but error non-null).",
+      "if": {
+        "required": ["prediction"],
+        "properties": {
+          "prediction": {
+            "required": ["is_unsafe"],
+            "properties": { "is_unsafe": { "type": "null" } }
+          }
+        }
+      },
+      "then": {
+        "required": ["error"],
+        "properties": { "error": { "type": "string", "minLength": 1 } }
+      },
+      "else": {
+        "properties": { "error": { "type": "null" } }
+      }
+    }
+  ],
+  "$defs": {
+    "canonicalCategory": {
+      "$comment": "22 canonical categories + 'other'. Same source as references/category_mapping.json -> canonical_categories (M0 §4 / dataset-format-checker references/taxonomy.md); tests assert the two lists stay identical.",
+      "enum": [
+        "hate_discrimination",
+        "harassment_bullying",
+        "sexual_content",
+        "child_safety",
+        "self_harm",
+        "violence",
+        "weapons",
+        "illicit_behavior",
+        "cyber_safety",
+        "drugs",
+        "chemical_biological",
+        "fraud_financial_crime",
+        "privacy_pii",
+        "extremism_terrorism",
+        "misinformation",
+        "copyright",
+        "animal_abuse",
+        "profanity_toxicity",
+        "political_persuasion",
+        "medical_safety",
+        "legal_safety",
+        "general_harm",
+        "other"
+      ]
+    }
+  }
+}

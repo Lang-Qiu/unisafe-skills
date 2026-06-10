@@ -7,12 +7,12 @@
 
 ## Phase 0 · 契约与骨架（可并行）
 
-- [ ] 任务 1：`schemas/guard_output.schema.json`（XS · 依赖无）
-- [ ] 任务 2：`references/io-contract.md`（含全局 exit code contract 表）（XS · 依赖无）
-- [ ] 任务 3：`references/category_mapping.json` + `metrics-definitions.md`（含双口径定义）（S · 依赖无）
-- [ ] 任务 4：`examples/input.sample.jsonl` 覆盖矩阵 6 条（M0 的 skill 内 fallback）（XS · 依赖无）
+- [x] 任务 1：`schemas/guard_output.schema.json`（XS · 依赖无）
+- [x] 任务 2：`references/io-contract.md`（含全局 exit code contract 表）（XS · 依赖无）
+- [x] 任务 3：`references/category_mapping.json` + `metrics-definitions.md`（含双口径定义）（S · 依赖无）
+- [x] 任务 4：`examples/input.sample.jsonl` 覆盖矩阵 6 条（M0 的 skill 内 fallback）（XS · 依赖无）
 
-### ☑ Checkpoint C0：四件套可解析；mapping↔M0 §4 一致；exit 表一致；（甲侧文档已推送 ✅）
+### ☑ Checkpoint C0：✅ 已通过（2026-06-11）——四件套可解析；mapping↔M0 §4 一致；exit 表一致；甲侧文档已推送 ✅
 
 ## Phase 1 · Core-Minimal 闭环（只依赖 skill 内文件）
 
