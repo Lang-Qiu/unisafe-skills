@@ -1,0 +1,69 @@
+{
+  "nist_safety_categories": [
+    "violence",
+    "hate_speech",
+    "harassment",
+    "sexual_content",
+    "suicide_self_harm",
+    "profanity",
+    "threats",
+    "health_misinformation"
+  ],
+  "real_toxicity_prompts": {
+    "toxicity": "harassment",
+    "severe_toxicity": "harassment",
+    "insult": "harassment",
+    "identity_attack": "hate_speech",
+    "obscene": "profanity",
+    "sexual_explicit": "sexual_content",
+    "threat": "threats"
+  },
+  "keyword_map": {
+    "violence": [
+      "violence", "violent", "physical harm", "assault", "murder", "kill", "abuse", "blood", "injury", "harmful behavior"
+    ],
+    "hate_speech": [
+      "hate", "hate speech", "discrimination", "stereotype", "identity attack", "racism", "racist", "sexist", "homophobic", "offensive language"
+    ],
+    "harassment": [
+      "harassment", "harass", "bullying", "abuse", "insult", "toxic", "toxicity", "abusive"
+    ],
+    "sexual_content": [
+      "sexual", "sexually explicit", "adult content", "obscene", "erotic", "porn", "sexual content"
+    ],
+    "suicide_self_harm": [
+      "self harm", "self-harm", "suicide", "suicidal", "self_harm", "self-injury"
+    ],
+    "profanity": [
+      "profanity", "profane", "obscene", "swear", "vulgar", "offensive language"
+    ],
+    "threats": [
+      "threat", "threats", "threatening", "intimidation"
+    ],
+    "health_misinformation": [
+      "health misinformation", "medical misinformation", "health", "medical advice", "health consultation", "misinformation regarding health"
+    ]
+  },
+  "drop_keywords": [
+    "copyright", "cyber", "cybercrime", "computer", "malware", "phishing", "credential", "security",
+    "terrorism", "terrorist", "weapon", "weapons", "banned substance", "drug", "illegal goods",
+    "financial crime", "property crime", "theft", "privacy", "privacy violation",
+    "politic", "politics", "controversial topics", "non violent unethical", "non-violent unethical",
+    "unethical behavior", "disinformation", "accountability", "fraud", "impersonation"
+  ],
+  "beavertails_category_aliases": {
+    "violence,aiding_and_abetting,incitement": ["violence"],
+    "violence": ["violence"],
+    "hate_speech,offensive_language": ["hate_speech", "profanity", "harassment"],
+    "hate_speech": ["hate_speech"],
+    "offensive_language": ["profanity", "harassment"],
+    "discrimination,stereotype,injustice": ["hate_speech"],
+    "self_harm": ["suicide_self_harm"],
+    "self-harm": ["suicide_self_harm"],
+    "sexually_explicit,adult_content": ["sexual_content"],
+    "sexual_content": ["sexual_content"],
+    "adult_content": ["sexual_content"],
+    "health_consultation": ["health_misinformation"],
+    "misinformation_regarding_health": ["health_misinformation"]
+  }
+}

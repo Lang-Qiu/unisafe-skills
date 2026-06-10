@@ -16,7 +16,7 @@ import time
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple
 
-from guard_llama_guard.utils import Route, build_guard_output
+from utils import Route, build_guard_output  # scripts/ is on sys.path (entry scripts ensure it)
 
 
 class GuardLoadError(Exception):

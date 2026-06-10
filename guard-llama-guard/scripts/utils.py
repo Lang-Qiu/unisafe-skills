@@ -20,8 +20,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-SKILL_DIR = Path(__file__).resolve().parents[2]
-CONFIG_PATH = SKILL_DIR / "config" / "category_mapping.json"
+SKILL_VERSION = "0.2.0"  # 0.2.0 = restructured to the scripts/ skill template
+
+SKILL_DIR = Path(__file__).resolve().parents[1]
+CONFIG_PATH = SKILL_DIR / "assets" / "category_mapping.json"
 
 TASK_TYPES = {
     "prompt_only_safety", "response_only_safety", "prompt_response_safety",
@@ -367,8 +369,7 @@ def explain_load_error(name: str, exc: Exception) -> str:
 
 
 # --------------------------------------------------------------------------- #
-# Self-test:  python -m guard_llama_guard.utils
-#         or  python src/guard_llama_guard/utils.py   (no install needed)
+# Self-test:  python scripts/utils.py   (from the skill directory; no install)
 # --------------------------------------------------------------------------- #
 def _self_test() -> int:
     text_caps = {"modalities": ["text"],

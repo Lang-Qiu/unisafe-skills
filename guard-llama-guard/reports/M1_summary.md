@@ -35,27 +35,27 @@ fixture 另测:malformed_json=1 / schema_invalid=2 / blank=1,均不致命)。
 |---|---|---|
 | ① 统一输入接口(读统一 JSONL) | `utils.load_valid_records` / `route` + `main.py` | `TestUtils` / `TestMainRuleOnlyE2E`;checker PASS 的 tiny 直接消费 |
 | ② Guard 调用(本地/API/规则;异常/超时/空输出) | `guards/{rule_based,llama_guard}.py`(+E1/E2 计划) | error-row 语义测试;exit-2 降级测试;API 超时约定见 schema.md §4 |
-| ③ 输出解析(≥is_unsafe + risk_categories) | `utils.build_guard_output` + 各适配器 | `test_build_guard_output_schema`;`examples/output_example.jsonl` |
-| ④ 标签映射(→统一 taxonomy,不确定显式记录) | `config/category_mapping.json` + `map_s_codes`(未知→`other`) | `TestCategoryMapping` / `test_map_s_codes_to_canonical` |
+| ③ 输出解析(≥is_unsafe + risk_categories) | `utils.build_guard_output` + 各适配器 + `schemas/guard_output.schema.json` + `scripts/validate.py` | `test_build_guard_output_schema` / `tests/test_validate.py`;`examples/output.sample.jsonl` |
+| ④ 标签映射(→统一 taxonomy,不确定显式记录) | `assets/category_mapping.json` + `map_s_codes`(未知→`other`) | `TestCategoryMapping` / `test_map_s_codes_to_canonical` |
 | ⑤ 评测兼容(Acc/Macro-F1/AUROC/Recall/FPR/Over-refusal…) | `metrics.py` v1 双口径 + probe + AUROC 门控 | `TestMetricsV1` 手算混淆矩阵;`reports/metrics/summary.*` |
 
 ## ⑤ Limitations(当前)
 
 1. **Llama Guard 未真机验证**:本机未装 transformers;装依赖+gated token 后跑
-   `python -m guard_llama_guard.guards.llama_guard` 自测即可补上(含 token-id /
+   `python scripts/guards/llama_guard.py` 自测即可补上(含 token-id /
    logit-agreement 校验打印)。失败时按 `--allow-missing-guards llama_guard` 降级,非 Core 失败。
 2. **本地推理无墙钟硬超时**(Windows 不能强杀 CUDA 算子):以 `max_new_tokens=20` 界定;API Guard 用请求级超时。
 3. 规则基线 AUROC=N/A(诚实);`--rule-score` 伪连续分仅 experimental,不进 headline。
 4. tiny 仅 8 条,指标用于管线验证而非结论;全量评测按 `M2_方向B_实验计划.md` 执行。
 
-## ⑥ 复现命令(零安装,二选一)
+## ⑥ 复现命令(零安装)
 
 ```bash
 cd guard-llama-guard
-python -m guard_llama_guard.main --profile core-minimal --input examples/tiny_unified.jsonl --out runs/smoke/
-python src/guard_llama_guard/main.py --profile core-minimal --input examples/tiny_unified.jsonl --out runs/smoke/
-python -m guard_llama_guard.metrics --dataset examples/tiny_unified.jsonl --guard-outputs runs/smoke/ --out reports/metrics/
-python -m pytest tests/ -q        # 50 passed
+python scripts/main.py --profile core-minimal --input examples/tiny_unified.jsonl --out runs/smoke/
+python scripts/metrics.py --dataset examples/tiny_unified.jsonl --guard-outputs runs/smoke/ --out reports/metrics/
+python scripts/validate.py runs/smoke/
+python -m pytest tests/ -q        # 56 passed
 ```
 
 ## ⑦ 运行截图清单(报告/zip 用,不入 git)

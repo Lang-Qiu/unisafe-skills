@@ -16,41 +16,33 @@
 
 对齐评分：**结构 40%**（完整 skill 目录含 `requirements.txt` + 示例级 SKILL.md + Skill-native 触发边界 + 统一输入输出 + 自包含契约 + M1_summary 追溯表）、**可复现 30%**（鲁棒处理 + 清晰计数 + metadata + 续跑 + 版本钉死 + 分层依赖 + 测试 + 失败降级 + 零安装可跑 + gated/镜像说明）、**结果 30%**（多 Guard×多任务矩阵 + 不虚高的指标 + CI + 配对检验 + 按类别 + 安全探针 FPR + 触发评测 + 误判案例 + **运行截图随跑随采**）。
 
-## Python 包与运行约定（务必遵守）
+## Skill 结构与运行约定（⚠️ 2026-06-10 作业模板变更后的现行约定）
 
-Skill 目录名保留连字符 `guard-llama-guard/`；**Python 包名用下划线** `guard_llama_guard`，置于 `src/` 布局下：
+> **变更记录**：作业的 skill 结构模板改版——`scripts/` 取代 `src/` 包布局,新增可选
+> `schemas/`/`templates/`/`assets/`,`manifest.yaml`/`requirements.txt` 不再出现在模板中
+> (仅 SKILL.md 必需)。已完成代码已于当日迁移(git mv 保历史,56 tests 复绿,checker PASS)。
+> 旧的「Python 包 + pip install -e + 双跑法」约定**作废**。
 
 ```text
 guard-llama-guard/
-├── SKILL.md  manifest.yaml  README.md  pyproject.toml
-├── requirements.txt                    # 作业模板必备文件：内容 = "-r requirements-core.txt"（聚合入口）
-├── requirements-core.txt  requirements-llama.txt  requirements-llm-judge.txt
-├── requirements-wildguard.txt  requirements-dev.txt  requirements-vllm.txt   # 最后一个 optional
-├── config/category_mapping.json
+├── SKILL.md                       # 必需：元信息 + 主执行说明
+├── README.md                      # 可选：给人看的说明
+├── scripts/                       # 确定性脚本（运行方式 = python scripts/xxx.py，零安装）
+│   ├── main.py  metrics.py  validate.py  utils.py
+│   └── guards/ (__init__.py  base.py  rule_based.py  llama_guard.py  llm_judge.py  wildguard.py)
 ├── references/ (INDEX.md  schema.md  optimization_notes.md  trigger_eval.md)
-├── src/
-│   └── guard_llama_guard/
-│       ├── __init__.py  utils.py  main.py  metrics.py
-│       └── guards/ (__init__.py  base.py  rule_based.py  llama_guard.py  llm_judge.py  wildguard.py)
-├── examples/ (tiny_unified.jsonl  input_example.jsonl  output_example.jsonl)   # 全部合法、可过 checker
-├── tests/ (test_basic.py  test_trigger.py  fixtures/tiny_malformed.jsonl)      # 畸形样本放 fixtures，不进 examples
+├── schemas/ guard_output.schema.json      # Guard 输出 JSON Schema（scripts/validate.py 执行校验）
+├── templates/ env.template                # HF_TOKEN / 镜像 / LLM-judge 环境变量模板
+├── examples/ (tiny_unified.jsonl  input.sample.jsonl  output.sample.jsonl)   # 模板命名
+├── tests/ (test_basic.py  test_validate.py  test_trigger.py  fixtures/tiny_malformed.jsonl)
+├── assets/ category_mapping.json          # 映射表迁入 assets（仿 checker 的 assets/unified_schema_v1.json 先例）
+├── requirements*.txt                      # 模板未列但保留（复现 30%）
 └── reports/ (M1_summary.md  metrics/  performance_ablation.csv ...)
 ```
 
-**两种运行方式都必须零安装可用**：
-
-```bash
-# 方式 1（推荐）：pip install -e .  或  设 PYTHONPATH=src 后
-python -m guard_llama_guard.main ...
-python -m guard_llama_guard.utils       # 自测
-python -m guard_llama_guard.metrics ...
-
-# 方式 2（评分人最可能的跑法，必须同样工作）：
-python src/guard_llama_guard/main.py ...
-```
-
-> **实现要求（消除双跑法矛盾）**：`main.py`/`metrics.py` 及各 `__main__` 自测入口处做 **sys.path bootstrap**（检测包未安装时把 `src/` 插入 `sys.path` 再绝对导入），保证两种方式在**未 pip install** 的干净环境同样工作。
-> ❌ 计划与文档中**禁止**出现 `python -m guard-llama-guard.xxx`（连字符不是合法 module 名）。
+**运行约定**：一律 `python scripts/main.py | metrics.py | validate.py`(各入口自带
+sys.path bootstrap,任意 cwd 可跑);`pyproject.toml`/`manifest.yaml` 已删除,无 pip 包。
+❌ 文档中不得再出现 `python -m guard_llama_guard.*` 或 `src/` 路径。
 
 ## Architecture Decisions
 
@@ -82,10 +74,10 @@ P2 是完整性能研究模块，覆盖 A–G 七类，每项做真实开/关对
 ## Dependency Graph（标注层级：◼Core-Min ◆Core-Full ◇Plus ▷Extension）
 
 ```
-Phase 0  Skill 本体（SKILL.md 示例级章节 / manifest / pyproject / references/schema.md 自包含 /
+Phase 0  Skill 本体（SKILL.md 示例级章节 / references/schema.md 自包含 / schemas+templates /
           requirements.txt 聚合入口 + 分层 requirements 骨架）  ◼
             │
-C1 config/category_mapping.json (Llama S1-S14 / 规则关键词 / taxonomy_version / 保留 OpenAI 表)  ◼
+C1 assets/category_mapping.json (Llama S1-S14 / 规则关键词 / taxonomy_version / 保留 OpenAI 表)  ◼
             │
 C2 examples/tiny_unified.jsonl（全合法 ≥8 条，含 probe/adversarial/图像 url 样本，可过 checker）
    + tests/fixtures/tiny_malformed.jsonl（畸形样本，测 skip 路径）  ◼ ← 提前，供下游自测
@@ -150,7 +142,7 @@ exit 3: fatal —— 运行前/全局错误，任务无法开始。
 
 **metrics CLI 契约（消歧）**：guard_output 行**不含真值**，metrics 必须按 `id` join 原始数据集：
 ```bash
-python -m guard_llama_guard.metrics \
+python scripts/metrics.py \
   --dataset examples/tiny_unified.jsonl \      # 真值来源（unified JSONL）
   --guard-outputs runs/smoke/ \                # 目录（取全部 guard_output.*.jsonl）或逗号分隔文件列表
   --out reports/metrics/
@@ -168,9 +160,10 @@ join 不到真值的预测行 → 计入 `metadata.join_misses` 并告警；join
 **`references/schema.md` 必含小节：** input required fields · task_type values · modality values · **risk_metadata 可选字段（over_refusal_probe / adversarial / jailbreak）** · truth field selection · guard output schema · metadata schema（raw/parsed/valid + per-guard eligible/answered/out_of_scope、skipped 细分、errors、join_misses、cache_*、confidence_*、versions）· error schema · coverage/error_rate definition · fatal-vs-skip 分级。
 **Acceptance criteria:**
 - [ ] SKILL.md 含上列全部章节；frontmatter 合法
-- [ ] 顶层 `requirements.txt` 存在（聚合入口）；manifest + pyproject 可 `pip install -e .`；schema.md 自包含
-**Verification:** `pip install -e guard-llama-guard` 成功且 `python -c "import guard_llama_guard"` 不报错；对照本节清单核 SKILL.md 章节齐全
-**Dependencies:** None  **Files:** `SKILL.md,manifest.yaml,pyproject.toml,requirements.txt,requirements-*.txt`(骨架),`references/{INDEX.md,schema.md}`  **Scope:** M
+- [ ] 顶层 `requirements.txt` 存在（聚合入口）；schema.md 自包含；schemas/+templates/ 槽位有真实内容
+**Verification:** `python scripts/utils.py` 自测 PASS；对照本节清单核 SKILL.md 章节齐全
+**Dependencies:** None  **Files:** `SKILL.md,requirements.txt,requirements-*.txt`(骨架),`references/{INDEX.md,schema.md}`,`schemas/guard_output.schema.json`,`templates/env.template`  **Scope:** M
+> ⚠️ 模板改版后已移除 manifest.yaml/pyproject.toml；新增 scripts/validate.py(C9 范畴)校验 Guard 输出 schema。
 
 > **Checkpoint Phase 0**：包可安装导入、SKILL.md 章节齐、requirements.txt 在位、schema.md 自包含 → 否则记 limitations。
 
@@ -180,11 +173,11 @@ join 不到真值的预测行 → 计入 `metadata.join_misses` 并告警；join
 
 > 顺序：C1 映射 → **C2 tiny（提前）** → C3 utils → C4 base+rule → **C5 main rule-only e2e** → **C6 metrics v1** →〔Checkpoint Core-Minimal+截图〕→ C7 llama → C8 main 接 Llama+cache → C9 packaging+tests → **C10 M1_summary**。
 
-#### Task C1: 类别映射与规则词表 `config/category_mapping.json` ◼
+#### Task C1: 类别映射与规则词表 `assets/category_mapping.json` ◼
 **Description:** Llama Guard S1–S14→22 类映射；规则基线关键词词表（**可附词权重**，供伪连续分）；含 `taxonomy_version`。**保留** OpenAI→22 类表（标注供 LLM-judge 复用）。原始标签保留策略写注释。
 **Acceptance criteria:** 含 `taxonomy_version`/`llama_guard_s_to_canonical`/`rule_keyword_map`，保留 `openai_to_canonical`；不可映射→`other`，unsafe 无类别→`general_harm`
 **Verification:** `python -c "import json;json.load(open(...,encoding='utf-8'))"`；抽查 S2→`illicit_behavior`、S14→`cyber_safety`
-**Dependencies:** None  **Files:** `config/category_mapping.json`  **Scope:** S
+**Dependencies:** None  **Files:** `assets/category_mapping.json`  **Scope:** S
 
 #### Task C2: tiny 数据集（拆两份，提前）◼
 **Description:**
@@ -196,43 +189,43 @@ join 不到真值的预测行 → 计入 `metadata.join_misses` 并告警；join
 **Verification:** `dataset-format-checker` 对 `examples/` 判 PASS(exit 0)；C5 完成后对 fixtures 跑 main → exit 0 且 metadata 三类 skip 各 ≥1
 **Dependencies:** Task 0（schema.md）, C1（label/类别值）  **Files:** `examples/tiny_unified.jsonl`, `tests/fixtures/tiny_malformed.jsonl`  **Scope:** S
 
-#### Task C3: 工具层 `src/guard_llama_guard/utils.py` ◼
+#### Task C3: 工具层 `scripts/utils.py` ◼
 **Description:** unified JSONL 逐行读写；**错误分级**（文件级/参数级→fatal exit 3 信号；单行空/坏 JSON/缺必填→record-level skip 计数继续）；按 `task_type`/`modality` 路由 + **按 Guard `capabilities` 算 eligible/out_of_scope**；按 schema.md 选真值字段；§5 输出记录构造器（含 error 行形态）；**计数与 metadata**（`raw_total/parsed_total/valid_total` 全局 + 每 Guard `eligible_total/answered_total/out_of_scope` + `skipped{blank,malformed_json,schema_invalid}` + `errors` + `join_misses` + cache + 版本 + 命令 + 耗时）；seed；**版本化 cache key**；`explain_load_error`；**sys.path bootstrap helper**（供两种跑法零安装）。
 **Acceptance criteria:**
 - [ ] `read_jsonl` 空/坏行→skip 计数不崩；缺必填→schema_invalid；文件不存在/非 JSONL/valid_total=0→fatal
 - [ ] `route(record, guard_capabilities)` 返回 (task, guard_input, truth_field) 或 out_of_scope 标记；`build_guard_output(...)` 同构 §5
 - [ ] `cache_key(...)` 含 record/model/template/taxonomy/code 版本；计数字段齐全
-**Verification:** `python -m guard_llama_guard.utils` 与 `python src/guard_llama_guard/utils.py` **两种跑法**自测均过：tiny_unified 合法条 route 通过、fixtures 三类 skip、空文件 fatal 信号
-**Dependencies:** C1  **Files:** `src/guard_llama_guard/{__init__.py,utils.py}`  **Scope:** M
+**Verification:** `python scripts/utils.py` 与 `python scripts/utils.py` **两种跑法**自测均过：tiny_unified 合法条 route 通过、fixtures 三类 skip、空文件 fatal 信号
+**Dependencies:** C1  **Files:** `scripts/{__init__.py,utils.py}`  **Scope:** M
 
 #### Task C4: Guard 抽象 + 规则基线 `guards/base.py` `guards/rule_based.py` ◼
 **Description:** `Guard` 抽象——`predict(record)` + **`predict_batch(records)`（默认=循环 predict；本地模型 Guard 覆写真批量，P2.D 消融直接用此接口）**；统一异常→`error`、计 `latency_ms`/`device`；声明 `capabilities{refusal, continuous_score, modalities, tasks}`。规则基线：关键词命中判 unsafe，纯 stdlib，`capabilities={refusal:False, continuous_score:False, modalities:[text], tasks:[prompt/response 类]}`；默认 `confidence=null`；**可选 `--rule-score` 开启伪连续分**（加权命中归一化 0–1，`confidence_method="rule_keyword_score_experimental"`，文档明示非概率、AUROC 行标 experimental）。带 `__main__` 自测。
 **Acceptance criteria:**
 - [ ] 规则 Guard 对 tiny_unified 文本记录每条合法 prediction；image 记录被标 out_of_scope（非 error）
 - [ ] 单条异常→`error` 不中断；`predict_batch` 默认实现可用
-**Verification:** `python -m guard_llama_guard.guards.rule_based`（及直接路径跑法）对 tiny_unified 产出合法 prediction，image 条 out_of_scope
-**Dependencies:** C1, C3  **Files:** `src/guard_llama_guard/guards/{__init__.py,base.py,rule_based.py}`  **Scope:** M
+**Verification:** `python scripts/guards/rule_based.py`（及直接路径跑法）对 tiny_unified 产出合法 prediction，image 条 out_of_scope
+**Dependencies:** C1, C3  **Files:** `scripts/guards/{__init__.py,base.py,rule_based.py}`  **Scope:** M
 
-#### Task C5: CLI 主流程（rule-only 端到端）`src/guard_llama_guard/main.py` ◼
+#### Task C5: CLI 主流程（rule-only 端到端）`scripts/main.py` ◼
 **Description:** 实现 profile / `--guards` 覆盖规则 / allow-missing / exit 0·2·3 全套（见 CLI 节）。读输入→**运行前校验（fatal→exit 3）**→路由→跑 required/optional guard（经 `predict_batch`）→写 `<out>/guard_output.<guard>.jsonl` + `<out>/metadata.json`。本任务只接 `rule`，**先把 rule-only e2e 跑通**。
 **关键写入语义：** **每个 eligible 记录都写一行 guard_output**（预测失败也写 `is_unsafe=null`+`error`）；skip 的 invalid 记录与该 Guard 的 out_of_scope 记录不写行 → **guard_output 行数 == 该 Guard 的 eligible_total**。
 **Acceptance criteria:**
 - [ ] `--profile core-minimal` 在 tiny_unified 上 exit 0；rule 的行数 == eligible_total（文本 7 条；image 条 out_of_scope）
 - [ ] 非法路径/参数/valid_total=0 → exit 3；required guard 整体失败 → exit 2；fixtures 畸形样本 → skip（exit 0）
-**Verification:** `python -m guard_llama_guard.main --profile core-minimal --input examples/tiny_unified.jsonl --out runs/smoke/` → exit 0 + 行数==eligible；`--input nope.jsonl` → exit 3；`--input tests/fixtures/tiny_malformed.jsonl` → exit 3（valid_total=0）而混合输入时 skip 不影响 exit
-**Dependencies:** C3, C4  **Files:** `src/guard_llama_guard/main.py`  **Scope:** M
+**Verification:** `python scripts/main.py --profile core-minimal --input examples/tiny_unified.jsonl --out runs/smoke/` → exit 0 + 行数==eligible；`--input nope.jsonl` → exit 3；`--input tests/fixtures/tiny_malformed.jsonl` → exit 3（valid_total=0）而混合输入时 skip 不影响 exit
+**Dependencies:** C3, C4  **Files:** `scripts/main.py`  **Scope:** M
 
-#### Task C6: 指标 v1 `src/guard_llama_guard/metrics.py` ◼
+#### Task C6: 指标 v1 `scripts/metrics.py` ◼
 **Description:** **CLI 契约见上**（`--dataset` 真值 + `--guard-outputs` 预测，按 id join；join 不到→`join_misses` 告警，joined==0→exit 3）。指标：Accuracy/Macro-F1/Recall/FPR/**unsafe_fpr_on_safe_probe**；按任务出矩阵；已校验连续分则 AUROC（否则 N/A）。**分母明确**：answered-only 分母=answered_total，failure-as-wrong 分母=eligible_total；`coverage=answered/eligible`、`error_rate=(eligible−answered)/eligible`。双口径输出 CSV+MD。
 **Acceptance criteria:**
 - [ ] 正类=unsafe；FPR=FP/(FP+TN)；`unsafe_fpr_on_safe_probe` 在 tiny 的 probe 样本上可算出
 - [ ] failure-as-wrong 把 error 行计为判错、分母=eligible_total；answered-only 分母=answered_total
 - [ ] 输出 `reports/metrics/summary.{csv,md}` 含计数列（raw/parsed/valid/eligible/answered）+ coverage/error_rate + 双口径
 **Verification:** 在 tiny_unified 的 rule 输出上跑通且 probe 指标有值；构造含 1 个 error 行的 toy 断言 双口径不同、coverage<1、手算混淆矩阵对上
-**Dependencies:** C5  **Files:** `src/guard_llama_guard/metrics.py`  **Scope:** M
+**Dependencies:** C5  **Files:** `scripts/metrics.py`  **Scope:** M
 
 > **Checkpoint Core-Minimal（M1 必过线）**
-> - **成功条件**：`python -m guard_llama_guard.main --profile core-minimal --input examples/tiny_unified.jsonl --out runs/smoke/` **exit 0**；guard_output 行数==eligible_total（含 error 行）；metadata 计数齐（raw/parsed/valid/eligible/answered/out_of_scope/skipped 细分/errors/cache/版本/命令）；metrics v1 双口径 + probe 指标（规则 AUROC=N/A）；tests 绿（C9）；**📸 当场截图归档（终端命令+exit code、输出文件、metrics 表）→ 供 C10/报告，免事后重跑**。
+> - **成功条件**：`python scripts/main.py --profile core-minimal --input examples/tiny_unified.jsonl --out runs/smoke/` **exit 0**；guard_output 行数==eligible_total（含 error 行）；metadata 计数齐（raw/parsed/valid/eligible/answered/out_of_scope/skipped 细分/errors/cache/版本/命令）；metrics v1 双口径 + probe 指标（规则 AUROC=N/A）；tests 绿（C9）；**📸 当场截图归档（终端命令+exit code、输出文件、metrics 表）→ 供 C10/报告，免事后重跑**。
 > - **失败降级**：纯 stdlib，原则不应失败；失败＝M1 失败须修。
 
 #### Task C7: Llama Guard 适配器 + 可靠性校验 `guards/llama_guard.py` ◆
@@ -241,8 +234,8 @@ join 不到真值的预测行 → 计入 `metadata.join_misses` 并告警；join
 - [ ] 有 GPU+授权时合法预测且 `confidence∈[0,1]`；两种输入模式按任务正确选择
 - [ ] metadata 记 `confidence_method`/`safe_token_ids`/`unsafe_token_ids`/`logit_label_agreement`/`confidence_status(validated|experimental|unavailable)`
 - [ ] 无授权/无依赖（required 时）→ `explain_load_error`+exit 2；被 allow-missing→跳过 exit 0
-**Verification:** `python -m guard_llama_guard.guards.llama_guard`（有权限）输出合法且打印校验；无依赖给提示不崩
-**Dependencies:** C1, C3, C4  **Files:** `src/guard_llama_guard/guards/llama_guard.py`  **Scope:** M
+**Verification:** `python scripts/guards/llama_guard.py`（有权限）输出合法且打印校验；无依赖给提示不崩
+**Dependencies:** C1, C3, C4  **Files:** `scripts/guards/llama_guard.py`  **Scope:** M
 
 #### Task C8: main 接入 Llama + 版本化 cache/resume ◆
 **Description:** `main.py` 注册 `llama_guard`，支持 `--profile core-full`；接入版本化缓存与断点续跑（`--no-cache` 关闭），metadata 记 `cache_hits/cache_misses/cache_hit_rate`。
@@ -250,14 +243,14 @@ join 不到真值的预测行 → 计入 `metadata.join_misses` 并告警；join
 - [ ] `--profile core-full` 有授权时 exit 0 跑 rule+llama；`--allow-missing-guards llama_guard` 无授权时降级 rule、exit 0、记 skipped_guards
 - [ ] 二次运行命中缓存 `cache_hit_rate>0`；中断后续跑不重复推理
 **Verification:** `--profile core-full ... --out runs/full/`（有权限→exit 0 两份输出）；再跑命中缓存；无权限加 allow-missing → exit 0 仅 rule
-**Dependencies:** C6, C7  **Files:** `src/guard_llama_guard/main.py`, `utils.py`(cache)  **Scope:** M
+**Dependencies:** C6, C7  **Files:** `scripts/main.py`, `utils.py`(cache)  **Scope:** M
 
 #### Task C9: 打包与测试 `README.md` `examples/{input,output}_example.jsonl` `tests/test_basic.py` requirements 钉版本 ◼/◆
 **Description:** README：来源/论文链接（Llama Guard 3 模型卡+论文、WildGuard、规则与 LLM-judge 说明）、**分层安装命令（顶层 requirements.txt = core 聚合入口）**、零安装两跑法、exit code、profile/--guards/allow-missing、fatal-vs-skip、**gated 三步授权 + 「gated 仓库不能走 hf-mirror，须直连 HF+token；非 gated 资源可 `HF_ENDPOINT=https://hf-mirror.com`」**、**torch Windows 安装说明（transformers/accelerate 钉死精确版；torch 给兼容范围 + 官方 index-url 安装命令，如 `pip install torch --index-url https://download.pytorch.org/whl/cu121`，避免 CPU 轮子）**、Core-Minimal/Full 与失败降级。input/output 示例与实际同构。`tests/test_basic.py`：规则 e2e（tiny_unified）、metrics 已知混淆矩阵、输出/metadata/error schema 符合 schema.md、**鲁棒性（fixtures 坏行→skip 不 exit 3、缺模型 allow-missing 不崩、非法路径→exit 3、行数==eligible_total）**、两跑法均可（子进程各跑一次）。
 **Acceptance criteria:**
 - [ ] 结构符合作业模板（含顶层 requirements.txt）+ 包布局；README 含上列全部章节与链接
 - [ ] 仅装 `requirements.txt`（=core）即可零安装跑 Core-Minimal；测试覆盖 e2e/指标/schema/错误分级/exit code/两跑法 六类全绿
-**Verification:** 干净环境 `pip install -r requirements.txt` 后 `python src/guard_llama_guard/main.py --profile core-minimal ...` exit 0（不经 pip install -e）；`python -m pytest guard-llama-guard/tests/test_basic.py -q` exit 0
+**Verification:** 干净环境 `pip install -r requirements.txt` 后 `python scripts/main.py --profile core-minimal ...` exit 0（不经 pip install -e）；`python -m pytest guard-llama-guard/tests/test_basic.py -q` exit 0
 **Dependencies:** C1–C8  **Files:** `README.md,requirements*.txt,examples/{input,output}_example.jsonl,tests/test_basic.py`  **Scope:** M
 
 #### Task C10: 最终交付总结 `reports/M1_summary.md` ◼
@@ -320,7 +313,7 @@ Return only the required JSON schema.
 ```
 **Acceptance criteria:** 有 key 时文本合法预测（0–1 confidence）+ JSON 解析鲁棒；注入用例不被劫持仍返回 JSON；缺 key（optional）跳过 exit 0；图像分支具备
 **Verification:** 配 env `--guards llm_judge --max-samples 6` 文本合法；注入用例不破 JSON；缺 key 跳过记录
-**Dependencies:** C4, C8  **Files:** `src/guard_llama_guard/guards/llm_judge.py`  **Scope:** M
+**Dependencies:** C4, C8  **Files:** `scripts/guards/llm_judge.py`  **Scope:** M
 
 #### Task E2: WildGuard 适配器 + refusal 指标 `guards/wildguard.py`
 **Description:** 加载 `allenai/wildguard`（gated→同样不可走镜像，README 说明）；官方指令模板；解析原生 prompt-harm/response-harm/refusal；confidence 用 yes/no logit 否则 N/A；覆写 `predict_batch`；`capabilities.refusal=True`。**Extension 指标**：对拒答能力 Guard（WildGuard、LLM-judge）计算 `refusal_accuracy`/`over_refusal`/`under_refusal`（与 Core 的 `unsafe_fpr_on_safe_probe` 区分）。
@@ -412,11 +405,12 @@ README 分层安装 + **torch Windows 提示**：`pip install torch --index-url 
 - ✅ 四档分层；rule-only e2e 在 Llama 之前；tiny 提前 C2（**拆 examples 合法版 + tests/fixtures 畸形版，补 probe/adversarial/url 图像样本**）；C10 M1_summary（**含 B①–⑤ 追溯表 + 截图清单**）。
 - ✅ 计数体系：raw/parsed/valid（全局）+ eligible/answered/out_of_scope（每 Guard）；行数==eligible_total；fatal/skip/out_of_scope 三级。
 - ✅ `Guard` 抽象含 `predict_batch`；metrics CLI=`--dataset`+`--guard-outputs`+`--out`；sys.path bootstrap 双跑法；超时承诺收窄（API 真实/本地 max_new_tokens）。
-- ✅ 顶层 `requirements.txt` 恢复（聚合入口，满足作业模板）；SKILL.md 章节对齐示例 skill；截图在 Checkpoint 当场采集。
+- ✅ 顶层 `requirements.txt` 恢复（聚合入口）；SKILL.md 章节对齐示例 skill；截图在 Checkpoint 当场采集。
+- ✅ **(2026-06-10) 作业 skill 模板改版迁移完成**：`src/` 包 → `scripts/` 平铺脚本(零安装 `python scripts/*.py`)；删 manifest.yaml/pyproject.toml；config/ → assets/；examples 改 `*.sample.jsonl` 命名；新增 `schemas/guard_output.schema.json` + `scripts/validate.py` + `tests/test_validate.py` + `templates/env.template`。迁移后 56 tests 绿、smoke exit 0、validate PASS、checker PASS(注:checker 现位于仓库 `.claude/skills/dataset-format-checker/`)。
 - ✅ WildGuard 现在纳入（E2）；API Guard = LLM-judge（你的 key）替换 OpenAI Moderation（E1，多模态+注入防护）；P2 完整保留（A–G）。
 - ✅ `.gitignore` 已加 `runs/`（评测输出不入库；`reports/` 保留入库）。
 - ❓ vLLM 默认不进依赖（E4 optional）。
 - ❗ 实现 E1 前需 API 参数：OpenAI 兼容？/`base_url`/模型名/环境变量（默认 `LLM_API_KEY`/`LLM_BASE_URL`/`LLM_MODEL`）/`response_format` JSON。
-- ⚠️ **同步范围扩大**：`M2_方向B_实验计划.md` 需更新 **§4 矩阵（OpenAI Moderation → LLM-judge）+ §10 命令骨架（旧路径 `python guard-llama-guard/src/main.py` 与旧 guard 列表 `llama_guard,rule,openai` 均已失效 → 改 `python -m guard_llama_guard.main` + 新 guard 名）**（M1 完成后或现在同步均可）。
+- ⚠️ **同步范围扩大**：`M2_方向B_实验计划.md` 需更新 **§4 矩阵（OpenAI Moderation → LLM-judge）+ §10 命令骨架（旧路径 `python guard-llama-guard/src/main.py` 与旧 guard 列表 `llama_guard,rule,openai` 均已失效 → 改 `python scripts/main.py` + 新 guard 名）**（M1 完成后或现在同步均可）。
 
 > 批准后从 **Task 0 → C1** 开始，先打到 **Checkpoint Core-Minimal（M1 必过线，当场截图）**，再 Core-Full，然后 Plus 与 Extension 按层推进，全程可降级。**本轮仅修订计划，未开始写代码。**

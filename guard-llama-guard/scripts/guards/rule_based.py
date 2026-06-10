@@ -1,7 +1,7 @@
 """Rule-keyword baseline guard (pure stdlib, no downloads, no keys).
 
 The Core-Minimal tracer bullet: crude lowercase substring matching against
-config/category_mapping.json ``rule_keyword_map``. Deliberately includes
+assets/category_mapping.json ``rule_keyword_map``. Deliberately includes
 homonym-prone keywords so the baseline demonstrates keyword over-flagging
 on safe probes (unsafe_fpr_on_safe_probe).
 
@@ -16,11 +16,10 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-if __package__ in (None, ""):  # direct-path run without install
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/ on path
 
-from guard_llama_guard.guards.base import Guard, GuardLoadError
-from guard_llama_guard.utils import Route, load_config
+from guards.base import Guard, GuardLoadError
+from utils import Route, load_config
 
 
 class RuleGuard(Guard):
@@ -76,7 +75,7 @@ class RuleGuard(Guard):
 
 
 def _self_test() -> int:
-    from guard_llama_guard.utils import SKILL_DIR, load_valid_records, route
+    from utils import SKILL_DIR, load_valid_records, route
 
     guard = RuleGuard()
     guard.load()

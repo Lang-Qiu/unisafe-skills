@@ -24,11 +24,10 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-if __package__ in (None, ""):  # direct-path run without install
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # scripts/ on path
 
-from guard_llama_guard.guards.base import Guard, GuardLoadError
-from guard_llama_guard.utils import Route, load_config
+from guards.base import Guard, GuardLoadError
+from utils import Route, load_config
 
 MODEL_ID = "meta-llama/Llama-Guard-3-1B"
 
@@ -216,7 +215,7 @@ class LlamaGuard(Guard):
                 except Exception as exc:  # noqa: BLE001
                     prediction, raw, error = {}, {"model_response": text}, \
                         f"{type(exc).__name__}: {exc}"
-                from guard_llama_guard.utils import build_guard_output
+                from utils import build_guard_output
                 rows.append(build_guard_output(
                     record_id=rt.record_id, guard_name=self.name,
                     guard_version=self.version,
@@ -229,7 +228,7 @@ class LlamaGuard(Guard):
 
 def _self_test() -> int:
     """Integration self-test (needs GPU/CPU + gated access + deps installed)."""
-    from guard_llama_guard.utils import SKILL_DIR, load_valid_records, route
+    from utils import SKILL_DIR, load_valid_records, route
 
     guard = LlamaGuard()
     try:

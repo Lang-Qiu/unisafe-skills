@@ -1,0 +1,2 @@
+# No required third-party dependencies for included scripts.
+# Python >= 3.8 recommended.

@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "guard-llama-guard/guard_output.schema.json",
+  "title": "Unified guard-output record",
+  "description": "One JSON line per eligible input record (references/schema.md section 3). prediction.is_unsafe is null ONLY when error is set; the row is still written.",
+  "type": "object",
+  "required": ["id", "guard", "prediction", "raw_output", "runtime", "error"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {"type": "string", "minLength": 1,
+           "description": "input record id (join key for metrics)"},
+    "guard": {
+      "type": "object",
+      "required": ["name", "version", "modality"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "version": {"type": "string"},
+        "modality": {"type": "array", "items": {"type": "string",
+                     "enum": ["text", "image", "video", "audio"]}}
+      }
+    },
+    "prediction": {
+      "type": "object",
+      "required": ["is_unsafe", "risk_categories", "action", "confidence"],
+      "properties": {
+        "is_unsafe": {"type": ["boolean", "null"]},
+        "risk_categories": {"type": "array", "items": {"type": "string"},
+                            "description": "canonical taxonomy (22 classes + other)"},
+        "severity": {"type": ["integer", "string", "null"]},
+        "action": {"type": "string",
+                   "enum": ["allow", "refuse", "safe_complete", "warn",
+                            "redirect", "escalate", "uncertain"]},
+        "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "confidence_method": {"type": ["string", "null"]},
+        "is_refusal": {"type": ["boolean", "null"],
+                       "description": "only guards with refusal capability"}
+      }
+    },
+    "raw_output": {"type": "object",
+                   "description": "verbatim guard output (auditable, unmapped)"},
+    "runtime": {
+      "type": "object",
+      "properties": {
+        "latency_ms": {"type": ["integer", "number", "null"]},
+        "cost": {"type": ["number", "null"]},
+        "device": {"type": ["string", "null"]}
+      }
+    },
+    "error": {"type": ["string", "null"],
+              "description": "null on success; readable reason on per-record failure"}
+  },
+  "allOf": [
+    {
+      "description": "error row => is_unsafe must be null and action uncertain",
+      "if": {"properties": {"error": {"type": "string"}}},
+      "then": {"properties": {"prediction": {"properties": {
+        "is_unsafe": {"type": "null"},
+        "action": {"const": "uncertain"}}}}}
+    }
+  ]
+}

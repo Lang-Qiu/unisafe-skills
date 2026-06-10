@@ -1,0 +1,9 @@
+SKILL.md
+README.md
+requirements.txt
+manifest.txt
+config/category_mapping.json
+scripts/download_text_modal_dataset.py
+scripts/to_unified_format.py
+scripts/validate_output.py
+examples/expected_record.json

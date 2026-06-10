@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Unified Harmful Content Guard Dataset Record",
+  "type": "object",
+  "required": ["id", "source", "modality", "task_type", "content", "label", "raw_label", "raw_example"],
+  "properties": {
+    "id": {"type": "string"},
+    "source": {
+      "type": "object",
+      "required": ["dataset", "split"],
+      "properties": {
+        "dataset": {"type": ["string", "null"]},
+        "subset": {"type": ["string", "null"]},
+        "version": {"type": ["string", "null"]},
+        "split": {"type": ["string", "null"]},
+        "url": {"type": ["string", "null"]},
+        "license": {"type": ["string", "null"]}
+      },
+      "additionalProperties": true
+    },
+    "modality": {
+      "type": "array",
+      "items": {"enum": ["text", "image", "video", "audio"]}
+    },
+    "task_type": {
+      "enum": [
+        "prompt_only_safety",
+        "response_only_safety",
+        "prompt_response_safety",
+        "conversation_safety",
+        "refusal_detection",
+        "jailbreak_detection",
+        "image_safety",
+        "image_text_safety",
+        "video_safety"
+      ]
+    },
+    "language": {"type": ["string", "null"]},
+    "content": {
+      "type": "object",
+      "required": ["prompt", "response", "conversation", "images", "videos", "audio"],
+      "properties": {
+        "system": {"type": ["string", "null"]},
+        "prompt": {"type": ["string", "null"]},
+        "response": {"type": ["string", "null"]},
+        "conversation": {"type": ["array", "null"]},
+        "images": {"type": "array"},
+        "videos": {"type": "array"},
+        "audio": {"type": "array"}
+      },
+      "additionalProperties": true
+    },
+    "label": {
+      "type": "object",
+      "required": ["target", "is_unsafe", "canonical_categories", "policy_action"],
+      "properties": {
+        "target": {
+          "enum": ["prompt", "response", "prompt_response_pair", "conversation", "image", "image_text_pair", "video"]
+        },
+        "is_unsafe": {"type": ["boolean", "null"]},
+        "prompt_is_unsafe": {"type": ["boolean", "null"]},
+        "response_is_unsafe": {"type": ["boolean", "null"]},
+        "is_refusal": {"type": ["boolean", "null"]},
+        "requires_refusal": {"type": ["boolean", "null"]},
+        "response_is_safe": {"type": ["boolean", "null"]},
+        "canonical_categories": {"type": "array", "items": {"type": "string"}},
+        "canonical_subcategories": {"type": "array", "items": {"type": "string"}},
+        "severity": {"type": ["string", "null"], "enum": ["none", "low", "medium", "high", "critical", null]},
+        "policy_action": {"enum": ["allow", "refuse", "safe_complete", "warn", "redirect", "escalate", "uncertain"]}
+      },
+      "additionalProperties": true
+    },
+    "risk_metadata": {"type": "object"},
+    "annotation": {"type": "object"},
+    "generation_metadata": {"type": "object"},
+    "dedup": {"type": "object"},
+    "raw_label": {"type": "object"},
+    "raw_example": {"type": "object"}
+  },
+  "additionalProperties": true
+}

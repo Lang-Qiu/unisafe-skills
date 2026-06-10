@@ -27,8 +27,8 @@ self-contained in [`references/schema.md`](references/schema.md).
 
 ## TL;DR for the agent running this skill
 
-1. **The Python package is `guard_llama_guard` (underscores).** `python -m guard-llama-guard.x`
-   is invalid. Both run modes below work with ZERO install (entry scripts bootstrap `sys.path`).
+1. **Everything runs as plain scripts, zero install**: `python scripts/main.py ...` from any
+   cwd (each entry script bootstraps `sys.path`). There is no pip package to install.
 2. **Core-Minimal needs no downloads, no GPU, no keys**: `--profile core-minimal` runs the pure
    stdlib rule baseline end-to-end. Start there to validate the pipeline before any model.
 3. **Llama Guard 3 is gated** and gated repos are **NOT served by hf-mirror** — you need web
@@ -45,16 +45,16 @@ self-contained in [`references/schema.md`](references/schema.md).
 # from the guard-llama-guard/ directory
 pip install -r requirements.txt              # = requirements-core.txt (pytest only)
 
-# Run mode A (module):
-python -m guard_llama_guard.main --profile core-minimal \
-  --input examples/tiny_unified.jsonl --out runs/smoke/
-# Run mode B (direct path, identical result):
-python src/guard_llama_guard/main.py --profile core-minimal \
+# Run the guards (zero install, works from any cwd):
+python scripts/main.py --profile core-minimal \
   --input examples/tiny_unified.jsonl --out runs/smoke/
 
 # Metrics (truth comes from the dataset; predictions from guard outputs; joined by id):
-python -m guard_llama_guard.metrics --dataset examples/tiny_unified.jsonl \
+python scripts/metrics.py --dataset examples/tiny_unified.jsonl \
   --guard-outputs runs/smoke/ --out reports/metrics/
+
+# Validate guard-output files against schemas/guard_output.schema.json:
+python scripts/validate.py runs/smoke/
 
 # Tests:
 python -m pytest tests/ -q
@@ -64,7 +64,7 @@ Llama Guard (Core-Full, needs GPU + gated access):
 
 ```bash
 pip install -r requirements-llama.txt        # see README for the torch/CUDA install note
-python -m guard_llama_guard.main --profile core-full \
+python scripts/main.py --profile core-full \
   --input examples/tiny_unified.jsonl --out runs/full/ --hf-token $HF_TOKEN
 ```
 
@@ -106,7 +106,7 @@ with `--allow-missing-guards llama_guard` → skipped, recorded, exit 0.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `No module named guard_llama_guard` | ran `-m` outside skill dir without install | run from `guard-llama-guard/`, or `pip install -e .`, or use run mode B |
+| `ModuleNotFoundError: utils/guards` | invoked a script via an odd loader | run `python scripts/main.py ...` directly (works from any cwd; scripts bootstrap their own path) |
 | `401/403 gated` on model download | no web approval / no token | 3-step auth above; or `--allow-missing-guards llama_guard` |
 | download hangs via mirror | gated repo + hf-mirror | gated repos need direct huggingface.co + token |
 | `exit 3` immediately | bad input path/args or 0 valid records | check the printed fatal reason; validate input with `dataset-format-checker` |

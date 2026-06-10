@@ -5,9 +5,8 @@ Exit codes (references/schema.md §4):
   2  at least one REQUIRED guard failed to load or run
   3  fatal pre-run error (bad input/args/output dir, or zero valid records)
 
-Zero-install run modes:
-  python -m guard_llama_guard.main --profile core-minimal --input examples/tiny_unified.jsonl --out runs/smoke/
-  python src/guard_llama_guard/main.py  (same arguments)
+Run (zero install, from the skill directory):
+  python scripts/main.py --profile core-minimal --input examples/tiny_unified.jsonl --out runs/smoke/
 """
 from __future__ import annotations
 
@@ -17,11 +16,12 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-if __package__ in (None, ""):  # direct-path run without install
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # scripts/ on path
 
-from guard_llama_guard import __version__, utils
-from guard_llama_guard.guards.base import Guard, GuardLoadError
+import utils
+from guards.base import Guard, GuardLoadError
+
+__version__ = utils.SKILL_VERSION
 
 EXIT_OK = 0
 EXIT_REQUIRED_GUARD_FAILED = 2
@@ -41,16 +41,16 @@ PROFILES: Dict[str, List[str]] = {
 
 def _make_guard(name: str, args: argparse.Namespace) -> Guard:
     if name == "rule":
-        from guard_llama_guard.guards.rule_based import RuleGuard
+        from guards.rule_based import RuleGuard
         return RuleGuard(score_mode=args.rule_score)
     if name == "llama_guard":
-        from guard_llama_guard.guards.llama_guard import LlamaGuard
+        from guards.llama_guard import LlamaGuard
         return LlamaGuard(hf_token=args.hf_token, cache_dir=args.cache_dir)
     if name == "llm_judge":
-        from guard_llama_guard.guards.llm_judge import LlmJudgeGuard
+        from guards.llm_judge import LlmJudgeGuard
         return LlmJudgeGuard()
     if name == "wildguard":
-        from guard_llama_guard.guards.wildguard import WildGuardGuard
+        from guards.wildguard import WildGuardGuard
         return WildGuardGuard(hf_token=args.hf_token, cache_dir=args.cache_dir,
                               backend=args.backend)
     raise KeyError(name)

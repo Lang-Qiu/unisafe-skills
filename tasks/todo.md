@@ -1,12 +1,13 @@
 # TODO — `guard-llama-guard` Skill (M1 主要产物) · 分层版（实现前最终修订 r3）
 
 > 详见 [`plan.md`](plan.md)。四档：**◼Core-Minimal（必过）/ ◆Core-Full（默认目标）/ ◇Plus（强烈建议）/ ▷Extension（保留不阻塞）**。
-> Python 包 = `guard_llama_guard`（下划线）；`python -m guard_llama_guard.*` 与 `python src/guard_llama_guard/main.py` **两跑法零安装均可**（sys.path bootstrap）。
+> ⚠️ 2026-06-10 作业模板改版后:**scripts/ 平铺布局**,一律 `python scripts/main.py|metrics.py|validate.py`(零安装,任意 cwd);无 pip 包/manifest/pyproject。
 > 状态：⬜ 待办 / 🟦 进行中 / ✅ 完成
 
 ## Phase 0 — Skill 本体 ◼
-- [x] ✅ **T0** `SKILL.md`(示例级章节齐) + `manifest.yaml` + `pyproject.toml` + 顶层 `requirements.txt` + 分层 requirements + 自包含 `references/schema.md` + `INDEX.md` (commit 18dc422)
-- [x] ✅ **Checkpoint P0** — `pip install -e .` 导入 OK
+- [x] ✅ **T0** `SKILL.md`(示例级章节齐) + 顶层 `requirements.txt` + 分层 requirements + 自包含 `references/schema.md` + `INDEX.md` (18dc422;模板改版后 manifest/pyproject 已移除)
+- [x] ✅ **Checkpoint P0** — scripts 自测 PASS(模板改版后以 `python scripts/utils.py` 为准)
+- [x] ✅ **模板迁移(2026-06-10)** — src/→scripts/、config/→assets/、examples 改 *.sample 命名、新增 schemas/guard_output.schema.json + scripts/validate.py + tests/test_validate.py + templates/env.template;56 tests 绿 + smoke exit 0 + validate PASS + checker PASS
 
 ## Phase 1 — Core Mainline（tiny 提前 / rule-only e2e 先行 / Llama 后接）
 - [x] ✅ **C1** ◼ `config/category_mapping.json` — S1-S14→22 类 + 规则词表 + taxonomy_version；5 测试 (559d3a0)

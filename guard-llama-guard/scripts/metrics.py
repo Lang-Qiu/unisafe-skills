@@ -11,8 +11,8 @@ per task bucket, BOTH denominators (references/schema.md §6):
 Plus coverage / error_rate, unsafe_fpr_on_safe_probe (any guard), and AUROC
 (answered subset, non-experimental continuous scores only; otherwise N/A).
 
-CLI:
-  python -m guard_llama_guard.metrics --dataset examples/tiny_unified.jsonl \
+CLI (from the skill directory):
+  python scripts/metrics.py --dataset examples/tiny_unified.jsonl \
       --guard-outputs runs/smoke/ --out reports/metrics/
 """
 from __future__ import annotations
@@ -24,10 +24,9 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-if __package__ in (None, ""):  # direct-path run without install
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # scripts/ on path
 
-from guard_llama_guard.utils import FatalInputError, load_valid_records, utc_now_iso
+from utils import FatalInputError, load_valid_records, utc_now_iso
 
 EXIT_OK = 0
 EXIT_FATAL = 3
