@@ -9,16 +9,16 @@
 ## Phase 0 · 定义先行（零依赖）
 
 - [ ] 任务 1：`references/metrics-definitions.md` v2 增补段（S · 依赖无）
-- [ ] 任务 2：category/adversarial/probe fixtures + 手算答案钥（M · 依赖 1）
+- [ ] 任务 2：category/adversarial/probe fixtures + 答案钥文件 `tests/fixtures/category_expected.json`（M · 依赖 1）
 
-### ☐ Checkpoint C0：v2 定义自审 + 答案钥定稿 + AD-1/R1 用户确认 + `M1_待甲确认.md` #4 追加 v2 一行
+### ☐ Checkpoint C0：v2 定义自审 + `category_expected.json` 定稿 + `M1_待甲确认.md` #4 追加 v2 一行（AD-1/R1 走默认接受制，无人工阻塞）
 
 ## Phase 1 · Core-Minimal（C0 后；零第三方依赖；M2 唯一硬门）
 
 - [ ] 任务 3：`--by-category` 实现 + TestByCategory（M · 依赖 2）
-- [ ] 任务 4：`--adversarial-split` 实现 + TestAdversarialSplit（S · 依赖 2；与 3 并行）
-- [ ] 任务 5：comparison 渲染 + `--baseline` + docstring 更新（M · 依赖 2；与 3/4 并行）
-- [ ] 任务 6：over-refusal 对比正式化 + TestOverRefusalFormal（S · 依赖 5）
+- [ ] 任务 4：`--adversarial-split` 实现 + TestAdversarialSplit（S · 依赖 2；提交序在 3 后，AD-6 串行落盘）
+- [ ] 任务 5：comparison 渲染 + `--baseline` + docstring 更新（M · 依赖 2；提交序在 4 后）
+- [ ] 任务 6：over-refusal 对比正式化（含字段名兼容别名检查）+ TestOverRefusalFormal（S · 依赖 5）
 - [ ] 任务 7：`examples/metrics.sample.m2.json` 黄金 + 向后兼容锁（S · 依赖 3,4,5,6）
 
 ### ☐ Checkpoint C1：spec §6-A/B/C/D/O 全勾；unittest 全绿仍零依赖（干净 venv 复证）；带旗标 CLI 全链路 exit 0
@@ -28,19 +28,21 @@
 - [ ] 任务 8：`llm_judge.py` + 注册表 + 离线测试（M · 依赖 C1）
 - [ ] 任务 9：`main.py` 接线 `--judge-model` + timeout None 哨兵（S · 依赖 8）
 - [ ] 任务 10：`references/llm-judge-notes.md`（XS · 依赖 8）
-- [ ] 任务 11：live 联调（LLM_JUDGE_LIVE=1；需用户 session 注入 env）+ git grep 自查（S · 依赖 8,9,10）
+- [ ] 任务 11：live 联调（LLM_JUDGE_LIVE=1；需用户 session 注入 env；无 key 判例仅限显式 llm-judge 命令，smoke/默认 CI 不跑 judge）+ git grep 自查（S · 依赖 8,9,10）
 - [ ] 任务 12：三 Guard 对比矩阵（顶替数据）+ notes 回填观测（S · 依赖 11）
 
 ### ☐ Checkpoint C2（软门）：spec §6-E 全勾；三 Guard 矩阵存在；失败 → live 档 N/A、对比退回两 Guard
 
 ## Phase 3 · Plus（C1 后与 P2 并行；逐项可 N/A）
 
+> 引用纪律：M1 数字须有 `ablations.md`/`llama-guard-notes.md` 记录并标注来源；否则轻量 sanity 复测后再引用。
+
 - [ ] 任务 13：消融 A+B 回填（M · GPU · 依赖 C1）
 - [ ] 任务 14：消融 D batch 扫描（S · GPU · 依赖 C1）
 - [ ] 任务 15：消融 C 阈值扫描（llama 单源先行；judge 源依赖 12 后补）（S · 依赖 C1）
 - [ ] 任务 16：trigger eval 实测档（与甲 #3 合并；人工新会话）（S · 依赖 C1 + 甲配合）
 - [ ] 任务 17：report 模板 v2 占位符（XS · 依赖 C1）
-- [ ] 任务 18：全量 1,725 条结果档 + E2E 截图（S+等待 · 依赖 C1 + 甲 #2 数据；judge 行依赖 C2 可选）
+- [ ] 任务 18：全量 1,725 条结果档 + E2E 截图（S+等待 · 依赖 C1 + 甲 #2 数据；judge 行依赖 C2 可选；judge 未完则标 **partial**，不得声称三 Guard 全量）
 
 ## Phase 4 · 交付（硬依赖 C1；软吸收 C2/P3/18）
 
