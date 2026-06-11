@@ -15,13 +15,13 @@
 
 ## Phase 1 · Core-Minimal（C0 后；零第三方依赖；M2 唯一硬门）
 
-- [ ] 任务 3：`--by-category` 实现 + TestByCategory（M · 依赖 2）
-- [ ] 任务 4：`--adversarial-split` 实现 + TestAdversarialSplit（S · 依赖 2；提交序在 3 后，AD-6 串行落盘）
-- [ ] 任务 5：comparison 渲染 + `--baseline` + docstring 更新（M · 依赖 2；提交序在 4 后）
-- [ ] 任务 6：over-refusal 对比正式化（含字段名兼容别名检查）+ TestOverRefusalFormal（S · 依赖 5）
-- [ ] 任务 7：`examples/metrics.sample.m2.json` 黄金 + 向后兼容锁（S · 依赖 3,4,5,6）
+- [x] 任务 3：`--by-category` 实现 + TestByCategory（M · 依赖 2）——答案钥逐项命中；数据缺口 WARNING；46 绿（161e171）
+- [x] 任务 4：`--adversarial-split` 实现 + TestAdversarialSplit（S · 依赖 2；提交序在 3 后）——三态+守恒+n=0 省略；M1 响亮拒绝测试按 spec 退役；51 绿（3fbd0e3）
+- [x] 任务 5：comparison 渲染 + `--baseline` + docstring 更新（M · 依赖 2；提交序在 4 后）——≥2 guards 触发；计数+ao 五指标+fw 两指标+Δ；基线缺席 note；58 绿（e5b2f70）
+- [x] 任务 6：over-refusal 对比正式化 + TestOverRefusalFormal（S · 依赖 5）——**字段名兼容检查结论：M1 字段名与 v2 定义一致，无需别名**；fw>ao 分叉锁定；62 绿（d4b6c47）
+- [x] 任务 7：`examples/metrics.sample.m2.json` 黄金 + 向后兼容锁（S · 依赖 3,4,5,6）——M2 黄金锁定；M1 黄金锁（TestMetricsSampleGolden）原样在 M2 代码上保持绿即兼容断言；63 绿
 
-### ☐ Checkpoint C1：spec §6-A/B/C/D/O 全勾；unittest 全绿仍零依赖（干净 venv 复证）；带旗标 CLI 全链路 exit 0
+### ☑ Checkpoint C1：✅（2026-06-11）spec §6-A/B/C/D/O 全勾；干净 venv `pip freeze` 为空 + 63 tests OK（1 opt-in skip）；带旗标 CLI 全链路 exit 0
 
 ## Phase 2 · Core-Full：LLM-as-judge（C1 后；软门，失败不阻塞 C3）
 

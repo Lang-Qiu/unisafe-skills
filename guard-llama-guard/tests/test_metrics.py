@@ -404,6 +404,32 @@ class TestOverRefusalFormal(_CategoryFixtureCase):
         self.assertNotIn("unsafe_fpr_on_safe_probe", probe)
 
 
+class TestMetricsSampleM2Golden(unittest.TestCase):
+    """Task 7: lock examples/metrics.sample.m2.json (both flags + --baseline).
+
+    Backward compatibility (spec section 6-A first checkbox) is enforced by the
+    pre-existing TestMetricsSampleGolden: a flag-less single-guard run must stay
+    field-for-field identical to the M1 golden examples/metrics.sample.json —
+    that test keeps running unchanged against the M2 code.
+    """
+
+    def test_m2_sample_matches_fresh_run(self):
+        tmp = Path(tempfile.mkdtemp(prefix="guard-m2-golden-"))
+        code, out = run_metrics([
+            "--predictions", str(FIXTURES / "category_predictions.jsonl"),
+            "--dataset", str(FIXTURES / "category_dataset.jsonl"),
+            "--output-dir", str(tmp),
+            "--by-category", "--adversarial-split", "--baseline", "fixture-guard-b",
+        ])
+        assert code == 0, out
+        with open(tmp / "metrics.json", encoding="utf-8") as fh:
+            fresh = json.load(fh)
+        shutil.rmtree(tmp, ignore_errors=True)
+        with open(EXAMPLES / "metrics.sample.m2.json", encoding="utf-8") as fh:
+            golden = json.load(fh)
+        self.assertEqual(fresh, golden)
+
+
 class TestLoudRefusals(unittest.TestCase):
     # M2 note: test_reserved_flags_exit_1 was removed in task 4 — both reserved
     # flags are now implemented (spec-mandated replacement of the loud refusal);
