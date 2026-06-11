@@ -48,11 +48,16 @@ def build_parser() -> argparse.ArgumentParser:
                         help=f"comma-separated guard names (default: {DEFAULT_GUARDS}; known: {', '.join(known_guards())})")
     parser.add_argument("--limit", type=int, default=None, help="process at most N records")
     parser.add_argument("--device", default="auto", choices=("auto", "cuda", "cpu"))
-    parser.add_argument("--timeout-s", type=float, default=30.0,
-                        help="soft per-record timeout (CUDA inference cannot be interrupted mid-step)")
+    parser.add_argument("--timeout-s", type=float, default=None,
+                        help="soft per-record timeout; per-guard defaults when omitted: "
+                             "llama-guard/openai 30s, llm-judge 60s (CUDA inference "
+                             "cannot be interrupted mid-step)")
     parser.add_argument("--retries", type=int, default=1)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--model-id", default=DEFAULT_MODEL_ID)
+    parser.add_argument("--judge-model", default=None,
+                        help="model id for the llm-judge guard (fallback: LLM_JUDGE_MODEL "
+                             "env, then the adapter default)")
     parser.add_argument("--hf-token", default=None, help="HF token (never persisted; redacted in run_metadata)")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--resume", action="store_true",
@@ -146,6 +151,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
         completed: List[str] = []
         failed: Dict[str, str] = {}
+        timeout_effective: Dict[str, Optional[float]] = {}
         predicted = 0
         errors = 0
         resume_hits = 0
@@ -164,10 +170,11 @@ def main(argv: Optional[List[str]] = None) -> int:
 
             adapter_config = {
                 "device": args.device,
-                "timeout_s": args.timeout_s,
+                "timeout_s": args.timeout_s,  # None = each adapter applies its default
                 "retries": args.retries,
                 "batch_size": args.batch_size,
                 "model_id": args.model_id,
+                "judge_model": args.judge_model,
                 "hf_token": args.hf_token,
                 "seed": args.seed,
             }
@@ -176,6 +183,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                 if name in failed:
                     continue
                 adapter = get_adapter(name, adapter_config)
+                timeout_effective[name] = getattr(adapter, "timeout_s", None)
                 ok, reason = adapter.available()
                 if not ok:
                     failed[name] = reason
@@ -246,9 +254,11 @@ def main(argv: Optional[List[str]] = None) -> int:
             "limit": args.limit,
             "device": args.device,
             "timeout_s": args.timeout_s,
+            "timeout_s_effective": timeout_effective,
             "retries": args.retries,
             "batch_size": args.batch_size,
             "model_id": args.model_id,
+            "judge_model": args.judge_model,
             "hf_token": "<redacted>" if args.hf_token else None,
             "seed": args.seed,
             "resume": args.resume,
