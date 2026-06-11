@@ -158,9 +158,100 @@ class TestMetricsSampleGolden(unittest.TestCase):
             self.assertIn(key, probe)
 
 
+class _CategoryFixtureCase(unittest.TestCase):
+    """Shared runner for the M2 category fixtures (tests/fixtures/category_*).
+
+    All expected numbers come from tests/fixtures/category_expected.json — the
+    hand-computed answer key (two independent computations, see its _notes).
+    """
+
+    flags = []
+    _cache = {}
+
+    @classmethod
+    def setUpClass(cls):
+        key = tuple(cls.flags)
+        if key not in cls._cache:
+            tmp = Path(tempfile.mkdtemp(prefix="guard-m2-"))
+            code, out = run_metrics([
+                "--predictions", str(FIXTURES / "category_predictions.jsonl"),
+                "--dataset", str(FIXTURES / "category_dataset.jsonl"),
+                "--output-dir", str(tmp), *cls.flags,
+            ])
+            assert code == 0, out
+            with open(tmp / "metrics.json", encoding="utf-8") as fh:
+                result = json.load(fh)
+            shutil.rmtree(tmp, ignore_errors=True)
+            cls._cache[key] = result
+        cls.result = cls._cache[key]
+        with open(FIXTURES / "category_expected.json", encoding="utf-8") as fh:
+            cls.expected = json.load(fh)
+
+    def assert_close(self, expected, actual, path=""):
+        """Recursive numeric-tolerant comparison (floats: 9 places)."""
+        if isinstance(expected, dict):
+            for k, v in expected.items():
+                self.assertIn(k, actual, f"missing key {path}.{k}")
+                self.assert_close(v, actual[k], f"{path}.{k}")
+        elif isinstance(expected, float):
+            self.assertAlmostEqual(expected, actual, places=9, msg=path)
+        else:
+            self.assertEqual(expected, actual, path)
+
+
+class TestByCategory(_CategoryFixtureCase):
+    flags = ["--by-category"]
+
+    def test_categories_match_answer_key(self):
+        for guard in ("fixture-guard-a", "fixture-guard-b"):
+            expected = self.expected["by_category"][guard]["categories"]
+            actual = self.result[guard]["by_category"]["categories"]
+            self.assertEqual(sorted(expected), sorted(actual), guard)
+            self.assert_close(expected, actual, guard)
+
+    def test_macro_excludes_zero_support(self):
+        for guard in ("fixture-guard-a", "fixture-guard-b"):
+            self.assert_close(self.expected["by_category"][guard]["macro"],
+                              self.result[guard]["by_category"]["macro"], guard)
+
+    def test_audit_counters_match_answer_key(self):
+        for guard in ("fixture-guard-a", "fixture-guard-b"):
+            exp, act = self.expected["by_category"][guard], self.result[guard]["by_category"]
+            self.assertEqual(exp["unsafe_missing_category"], act["unsafe_missing_category"])
+            self.assertEqual(exp["unknown_category_values"], act["unknown_category_values"])
+            self.assert_close(exp["category_audit"], act["category_audit"], guard)
+
+    def test_audit_rows_do_not_pollute_binary_metrics(self):
+        # safe-with-categories rows must still count as plain TN/TP in head_binary
+        for guard in ("fixture-guard-a", "fixture-guard-b"):
+            exp = self.expected["head_binary"][guard]
+            head = self.result[guard]["buckets"]["head_binary"]
+            self.assert_close(exp["answered_only"], head["answered_only"], guard)
+            self.assert_close(exp["failure_as_wrong"], head["failure_as_wrong"], guard)
+
+    def test_no_flag_means_no_section(self):
+        plain = type(self)._cache.get(())
+        if plain is None:
+            tmp = Path(tempfile.mkdtemp(prefix="guard-m2-"))
+            code, out = run_metrics([
+                "--predictions", str(FIXTURES / "category_predictions.jsonl"),
+                "--dataset", str(FIXTURES / "category_dataset.jsonl"),
+                "--output-dir", str(tmp),
+            ])
+            assert code == 0, out
+            with open(tmp / "metrics.json", encoding="utf-8") as fh:
+                plain = json.load(fh)
+            shutil.rmtree(tmp, ignore_errors=True)
+            type(self)._cache[()] = plain
+        for guard in ("fixture-guard-a", "fixture-guard-b"):
+            self.assertNotIn("by_category", plain[guard])
+
+
 class TestLoudRefusals(unittest.TestCase):
     def test_reserved_flags_exit_1(self):
-        for flag in ("--by-category", "--adversarial-split"):
+        # M2 note: --by-category is implemented (task 3) and left this list;
+        # only still-reserved flags must keep refusing loudly.
+        for flag in ("--adversarial-split",):
             code, out = run_metrics([
                 "--predictions", str(FIXTURES / "mini_predictions.jsonl"),
                 "--dataset", str(FIXTURES / "metrics_dataset.jsonl"),
