@@ -13,6 +13,7 @@ _REGISTRY = {
     "rule": ("guards.rule_based", "RuleGuard"),
     "llama-guard": ("guards.llama_guard", "LlamaGuard"),
     "openai": ("guards.openai_moderation", "OpenAIModerationGuard"),
+    "llm-judge": ("guards.llm_judge", "LLMJudgeGuard"),
 }
 
 
