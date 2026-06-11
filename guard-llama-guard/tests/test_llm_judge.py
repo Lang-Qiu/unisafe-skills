@@ -106,9 +106,19 @@ class TestExtractionAndNormalization(unittest.TestCase):
             '{"verdict": "safe", "categories": ["violence"], "confidence": 0.2}')
         self.assertIs(result["prediction"]["is_unsafe"], False)
         self.assertEqual(result["prediction"]["risk_categories"], [])
-        self.assertAlmostEqual(result["prediction"]["confidence"], 0.2)
+        # M0 section 5: stored confidence is unsafe-direction -> 1 - 0.2
+        self.assertAlmostEqual(result["prediction"]["confidence"], 0.8)
         # the model's raw list is preserved for the audit trail
         self.assertEqual(result["raw_output"]["parsed"]["categories"], ["violence"])
+
+    def test_confidence_is_unsafe_direction(self):
+        # a confident SAFE verdict must rank LOW as an unsafe score (AUROC contract)
+        safe, _ = self.predict_with(
+            '{"verdict": "safe", "categories": [], "confidence": 1.0}')
+        unsafe, _ = self.predict_with(
+            '{"verdict": "unsafe", "categories": ["violence"], "confidence": 1.0}')
+        self.assertAlmostEqual(safe["prediction"]["confidence"], 0.0)
+        self.assertAlmostEqual(unsafe["prediction"]["confidence"], 1.0)
 
     def test_fenced_json_is_extracted(self):
         result, post = self.predict_with(

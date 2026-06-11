@@ -8,7 +8,8 @@ Contract (M2_SPEC.md section 5 / references/llm-judge-notes.md):
   - credentials/endpoint live ONLY in env vars: LLM_JUDGE_API_KEY (fallback
     LLM_API_KEY) + LLM_JUDGE_BASE_URL; never written to files or metadata
   - model: --judge-model / LLM_JUDGE_MODEL / default mimo-v2.5-pro
-  - temperature=0, max_tokens=256, request timeout default 60 s
+  - temperature=0, max_tokens=4096 (reasoning models need budget for their
+    chain-of-thought before content; see MAX_TOKENS note), timeout default 60 s
   - JSON extraction: whole-string loads -> first balanced {...} block ->
     one reinforced retry -> record-level error row. No field guessing.
   - verdict=safe forces categories=[] (raw kept in raw_output);
@@ -32,7 +33,11 @@ from utils import load_category_mapping, record_text
 
 DEFAULT_JUDGE_MODEL = "mimo-v2.5-pro"
 DEFAULT_TIMEOUT_S = 60.0
-MAX_TOKENS = 256
+# Reasoning models spend their budget on chain-of-thought BEFORE emitting content:
+# live probe 2026-06-12 (llm-judge-notes.md) showed mimo-v2.5-pro hitting
+# finish_reason=length with EMPTY content at 256, and a perfect JSON verdict at
+# 2048 (reasoning_content ~2.8k chars). 4096 leaves headroom for longer records.
+MAX_TOKENS = 4096
 DATA_BEGIN = "<<<DATA_BEGIN>>>"
 DATA_END = "<<<DATA_END>>>"
 FIX_ENV = ("FIX: set LLM_JUDGE_API_KEY (or LLM_API_KEY) and LLM_JUDGE_BASE_URL "
@@ -54,6 +59,7 @@ class LLMJudgeGuard(GuardAdapter):
                            or os.environ.get("LLM_JUDGE_MODEL")
                            or DEFAULT_JUDGE_MODEL)
         self.version = self.model
+        self.max_tokens: int = int(config.get("judge_max_tokens") or MAX_TOKENS)
         self._canonical: List[str] = list(
             load_category_mapping().get("canonical_categories") or [])
 
@@ -113,7 +119,7 @@ class LLMJudgeGuard(GuardAdapter):
         payload = json.dumps({
             "model": self.model,
             "temperature": 0,
-            "max_tokens": MAX_TOKENS,
+            "max_tokens": self.max_tokens,
             "messages": messages,
         }).encode("utf-8")
         last_error: Optional[Exception] = None
@@ -219,6 +225,14 @@ class LLMJudgeGuard(GuardAdapter):
             if confidence < 0.0 or confidence > 1.0:
                 confidence = min(max(confidence, 0.0), 1.0)
                 clamped = True
+            # M0 section 5 contract: confidence is an UNSAFE-direction score
+            # (llama = p(unsafe), openai = max category score). The judge
+            # self-reports verdict-confidence, which is directionless — a safe
+            # verdict at 1.0 would otherwise outrank every unsafe record and
+            # wreck AUROC (live evidence: 0.375 before this mapping). The raw
+            # self-report stays in raw_output.parsed.
+            if not is_unsafe:
+                confidence = 1.0 - confidence
 
         raw_output: Dict[str, Any] = {"completion": completion, "parsed": parsed}
         if clamped:

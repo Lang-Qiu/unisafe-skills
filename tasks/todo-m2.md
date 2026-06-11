@@ -28,10 +28,10 @@
 - [x] 任务 8：`llm_judge.py` + 注册表 + 离线测试（M · 依赖 C1）——18 离线测试（transport mock）；RED 抓到 general_harm 兜底缺失并修复；81 绿（8fa8fed）
 - [x] 任务 9：`main.py` 接线 `--judge-model` + timeout None 哨兵（S · 依赖 8）——None→llama/openai 30 / judge 60 实证；run_metadata 增 timeout_s_effective + judge_model（3a115ec）
 - [x] 任务 10：`references/llm-judge-notes.md`（XS · 依赖 8）——git grep key/URL 零命中（cb11753）
-- [ ] 任务 11：live 联调（**阻塞：权限分类器禁止乙在命令行注入 key——需用户亲自以 `!` 前缀执行 live 命令**；无 key 判例仅限显式 llm-judge 命令，smoke/默认 CI 不跑 judge）+ git grep 自查（S · 依赖 8,9,10）
-- [ ] 任务 12：三 Guard 对比矩阵（顶替数据）+ notes 回填观测（S · 依赖 11）
+- [x] 任务 11：live 联调（用户授权 key 注入后完成）——18/18 live 全绿；样本 5/5 非 error + validate PASS；exit 1（无 env 单跑，用户误跑意外实证）/ exit 2（与 rule 同跑）双判例 ✅；**两个 live 实证修复**：max_tokens 256→4096（推理模型思维链吃预算，finish=length 实录）、confidence 方向映射（自报把握分→unsafe 方向，AUROC 0.375→1.0）；git grep key/URL 零命中
+- [x] 任务 12：三 Guard 对比矩阵（顶替数据 10 条）+ notes 回填——judge Acc .90/FPR .167/AUROC 1.0 ＞ llama .80/.333/1.0 ＞ rule .70/.50/—；**judge 是唯一通过 XSTest 探针的 guard**（probe rate 0 vs 1.0/1.0）；judge 延迟 22.5s/条 → 全量串行 ≈11h，task 18 partial 规则现实化
 
-### ☐ Checkpoint C2（软门）：spec §6-E 全勾；三 Guard 矩阵存在；失败 → live 档 N/A、对比退回两 Guard
+### ☑ Checkpoint C2（软门）：✅（2026-06-12）spec §6-E 全勾；三 Guard 矩阵存在（`out_m2_threeguard/metrics/`，可截图）
 
 ## Phase 3 · Plus（C1 后与 P2 并行；逐项可 N/A）
 
