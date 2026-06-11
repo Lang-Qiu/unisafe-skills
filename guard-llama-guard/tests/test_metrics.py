@@ -298,6 +298,74 @@ class TestAdversarialSplit(_CategoryFixtureCase):
             self.assertNotIn("adversarial_split", plain[guard])
 
 
+class TestComparison(_CategoryFixtureCase):
+    flags = ["--baseline", "fixture-guard-b"]
+
+    def test_emitted_with_two_guards(self):
+        self.assertIn("comparison", self.result)
+        self.assertEqual(self.result["comparison"]["baseline"], "fixture-guard-b")
+
+    def test_head_binary_cells_match_answer_key(self):
+        cells = self.result["comparison"]["buckets"]["head_binary"]
+        for guard in ("fixture-guard-a", "fixture-guard-b"):
+            exp = self.expected["head_binary"][guard]
+            cell = cells[guard]
+            for key in ("eligible_total", "answered_total", "coverage", "error_rate"):
+                self.assert_close(exp[key], cell[key], f"{guard}.{key}")
+            for key in ("accuracy", "recall", "fpr", "macro_f1"):
+                self.assert_close(exp["answered_only"][key], cell["answered_only"][key], f"{guard}.ao.{key}")
+                if key in ("accuracy", "macro_f1"):
+                    self.assert_close(exp["failure_as_wrong"][key], cell["failure_as_wrong"][key],
+                                      f"{guard}.fw.{key}")
+            self.assert_close(exp["auroc"], cell["answered_only"]["auroc"], f"{guard}.auroc")
+
+    def test_delta_matches_answer_key(self):
+        exp = self.expected["comparison"]["head_binary_delta_fixture-guard-a_minus_baseline"]
+        delta = self.result["comparison"]["buckets"]["head_binary"]["fixture-guard-a"]["delta_vs_baseline"]
+        self.assert_close(exp["answered_only"], delta["answered_only"], "delta.ao")
+        self.assert_close(exp["failure_as_wrong"], delta["failure_as_wrong"], "delta.fw")
+        # the baseline's own delta is identically zero
+        base_delta = self.result["comparison"]["buckets"]["head_binary"]["fixture-guard-b"]["delta_vs_baseline"]
+        self.assertAlmostEqual(base_delta["answered_only"]["accuracy"], 0.0)
+
+    def test_probe_rate_and_delta(self):
+        exp_rate = self.expected["over_refusal_probe"]
+        exp_delta = self.expected["comparison"]["over_refusal_probe_delta_fixture-guard-a_minus_baseline"]
+        cells = self.result["comparison"]["buckets"]["over_refusal_probe"]
+        for guard in ("fixture-guard-a", "fixture-guard-b"):
+            self.assert_close(exp_rate[guard]["over_refusal_rate"],
+                              cells[guard]["over_refusal_rate"], f"{guard}.rate")
+        self.assert_close(exp_delta["over_refusal_rate"],
+                          cells["fixture-guard-a"]["delta_vs_baseline"]["over_refusal_rate"], "rate.delta")
+
+    def test_default_baseline_absent_means_no_delta(self):
+        plain = self.plain_result()  # no --baseline -> default 'rule', absent from fixtures
+        comp = plain["comparison"]
+        self.assertIsNone(comp["baseline"])
+        self.assertEqual(comp["requested_baseline"], "rule")
+        self.assertIn("rule", comp["note"])
+        for cells in comp["buckets"].values():
+            for cell in cells.values():
+                self.assertNotIn("delta_vs_baseline", cell)
+
+    def test_single_guard_means_no_comparison(self):
+        tmp = Path(tempfile.mkdtemp(prefix="guard-m2-single-"))
+        code, out = run_metrics([
+            "--predictions", str(FIXTURES / "mini_predictions.jsonl"),
+            "--dataset", str(FIXTURES / "metrics_dataset.jsonl"),
+            "--output-dir", str(tmp),
+        ])
+        assert code == 0, out
+        with open(tmp / "metrics.json", encoding="utf-8") as fh:
+            result = json.load(fh)
+        shutil.rmtree(tmp, ignore_errors=True)
+        self.assertNotIn("comparison", result)
+
+    def test_empty_buckets_stay_out_of_comparison(self):
+        # no pair records in the category fixtures -> no empty placeholder row
+        self.assertNotIn("pair_response_harm", self.result["comparison"]["buckets"])
+
+
 class TestLoudRefusals(unittest.TestCase):
     # M2 note: test_reserved_flags_exit_1 was removed in task 4 — both reserved
     # flags are now implemented (spec-mandated replacement of the loud refusal);
