@@ -109,7 +109,7 @@ AUROC = (R_pos − n_pos·(n_pos+1)/2) / (n_pos · n_neg)
 | `category_recall` | support 中被判 unsafe **且** c ∈ 预测类别的比例 |
 | `taxonomy_divergence` | binary 命中但类别未命中的计数（M0 §4 预告的 taxonomy 分歧的量化，如 phishing→S1） |
 | `category_precision` | #(c ∈ 预测类别 ∧ 真值 unsafe ∧ c ∈ 真值类别) / #(c ∈ 预测类别)——分母含真值 safe 的误报 |
-| `category_f1` | 2PR/(P+R)，P+R=0 记 0；precision 或 recall 不可算（分母 0）则 null |
+| `category_f1` | 2PR/(P+R)，P+R=0 记 0。边界：`support ≥ 1` 但 c 无任何预测（precision 分母 0，此时 category_recall 必为 0）→ **f1 = 0**（完全漏检的良定义极限）；`support = 0` 的纯误报类别 → recall/f1 = **null**（不入 macro） |
 
 - **macro**：仅对 `support ≥ 1` 的类别平均（macro_category_recall / macro_category_f1）。
 - `support < 10` 的类别逐类标 `low_support_warning: true`。
