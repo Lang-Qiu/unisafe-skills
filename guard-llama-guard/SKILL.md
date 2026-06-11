@@ -123,9 +123,9 @@ guard-level failure → skip guard + `FIX:` hint; record-level error → row kep
 | validate `--against` | `RESULT: PASS files=1 records=5`, exit 0 |
 | metrics (rule) | head_binary Acc=0.8, Recall=1.0, FPR=0.3333; AUROC `-` (rule has no confidence); over-refusal probe FPR=1.0 with low_sample_warning |
 | golden | output matches `examples/output.sample.jsonl` field-for-field except `runtime.latency_ms` |
-| tests | `python -m unittest discover -s tests` → 35 tests OK, no keys/network needed |
-
-Llama Guard sanity ranges: to be filled after Core-Full lands (M1 Phase 2).
+| tests | `python -m unittest discover -s tests` → 41 tests OK (1 opt-in live skip), no keys/network needed |
+| llama-guard on the sample (GPU bf16) | 5/5 non-error, head 4/5 correct; unsafe confidences ≥0.83, safe ≤0.001; S codes kept in `raw_output`; ~0.2 s/record after a ~10 s model load (CPU: ~5 s/record) |
+| llama-guard probe behavior | also flags the XSTest homonym probe (conf ≈0.7) — expected, not a bug; see `references/llama-guard-notes.md` |
 
 ## Good response pattern
 
@@ -136,7 +136,7 @@ When done, report: the exact commands run, exit codes, the three counts
 
 | symptom | fix |
 |---|---|
-| 401/403 on model download | accept license on the HF model page → `hf auth login` → re-run; rule results are unaffected meanwhile |
+| 401/403 on model download | accept license on the HF model page → `hf auth login` → re-run; rule results are unaffected meanwhile. Interim alternative: a non-gated re-upload of the same weights via `--model-id` (provenance lands in `run_metadata.config.model_id`; the Llama 3.2 license still applies) |
 | `No module named torch` | only the llama-guard path needs it: `pip install -r requirements-llama.txt`; or run `--guards rule` |
 | CUDA out of memory | `--device cpu` (slow but works for 1B) or smaller `--batch-size`, or `--limit` |
 | PowerShell passes literal `*.jsonl` | pass the directory instead of a glob; scripts discover `*.jsonl` themselves |

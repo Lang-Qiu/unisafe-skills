@@ -42,9 +42,9 @@
 
 ## Phase 4 · 验收交付（硬前置仅 C1）
 
-- [ ] 任务 18：SKILL.md 终稿（实测数字软回填；未达项标注不删除）（XS · 依赖 10+C1；13/16 软）
-- [ ] 任务 19：`root/M1_summary.md` 追溯表 + N/A 记录 + 已知限制 + Extension Backlog 表（S · 依赖 C1；13–17 状态输入）
-- [ ] 任务 20：§9 全量验收 + 截图归档 + push + 甲 #4 跟进（S · 依赖 18,19）
+- [x] 任务 18：SKILL.md 终稿（实测数字软回填；未达项标注不删除）（XS · 依赖 10+C1；13/16 软）——llama sanity 两行回填（5/5、conf 区间、探针行为）、镜像提示入 troubleshooting；152 行、指针全验证
+- [x] 任务 19：`root/M1_summary.md` 追溯表 + N/A 记录 + 已知限制 + Extension Backlog 表（S · 依赖 C1；13–17 状态输入）——五项追溯、指标矩阵内嵌、5 条 N/A、5 条限制、Backlog 6 行（含 MiMo 双协议端点入口）
+- [x] 任务 20：§9 全量验收 + 截图归档 + push + 甲 #4 跟进（S · 依赖 18,19）——§9 A–N 速览入 M1_summary §6；41 测试绿；#4 已在待甲确认中标注就绪；E2E 截图待人工
 
-### ☑ Checkpoint C3 = M1 技术交付：Core-Minimal 必需项全勾；其余勾或 N/A；M1_summary 完整
+### ☑ Checkpoint C3 = M1 技术交付：✅（2026-06-11）Core-Minimal 必需项全勾；其余勾或 N/A（见 M1_summary §3/§6）；M1_summary 完整。人工余项：E2E 截图、甲 #2/#3/#4、用户终审
 ### ↓ 交付后人工审阅（非技术验收）：用户终审 + 甲 metrics review 反馈处理
