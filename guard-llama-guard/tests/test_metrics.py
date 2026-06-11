@@ -198,6 +198,22 @@ class _CategoryFixtureCase(unittest.TestCase):
         else:
             self.assertEqual(expected, actual, path)
 
+    @classmethod
+    def plain_result(cls):
+        """metrics.json of a flag-less run on the category fixtures (cached)."""
+        if () not in cls._cache:
+            tmp = Path(tempfile.mkdtemp(prefix="guard-m2-"))
+            code, out = run_metrics([
+                "--predictions", str(FIXTURES / "category_predictions.jsonl"),
+                "--dataset", str(FIXTURES / "category_dataset.jsonl"),
+                "--output-dir", str(tmp),
+            ])
+            assert code == 0, out
+            with open(tmp / "metrics.json", encoding="utf-8") as fh:
+                cls._cache[()] = json.load(fh)
+            shutil.rmtree(tmp, ignore_errors=True)
+        return cls._cache[()]
+
 
 class TestByCategory(_CategoryFixtureCase):
     flags = ["--by-category"]
@@ -230,36 +246,62 @@ class TestByCategory(_CategoryFixtureCase):
             self.assert_close(exp["failure_as_wrong"], head["failure_as_wrong"], guard)
 
     def test_no_flag_means_no_section(self):
-        plain = type(self)._cache.get(())
-        if plain is None:
-            tmp = Path(tempfile.mkdtemp(prefix="guard-m2-"))
-            code, out = run_metrics([
-                "--predictions", str(FIXTURES / "category_predictions.jsonl"),
-                "--dataset", str(FIXTURES / "category_dataset.jsonl"),
-                "--output-dir", str(tmp),
-            ])
-            assert code == 0, out
-            with open(tmp / "metrics.json", encoding="utf-8") as fh:
-                plain = json.load(fh)
-            shutil.rmtree(tmp, ignore_errors=True)
-            type(self)._cache[()] = plain
+        plain = self.plain_result()
         for guard in ("fixture-guard-a", "fixture-guard-b"):
             self.assertNotIn("by_category", plain[guard])
 
 
+class TestAdversarialSplit(_CategoryFixtureCase):
+    flags = ["--adversarial-split"]
+
+    def test_slices_match_answer_key(self):
+        # expected slice dicts describe the head_binary bucket of each slice
+        for guard in ("fixture-guard-a", "fixture-guard-b"):
+            for slice_name in ("adversarial", "non_adversarial"):
+                expected = self.expected["adversarial_split"][guard][slice_name]
+                actual = self.result[guard]["adversarial_split"][slice_name]["buckets"]["head_binary"]
+                self.assert_close(expected, actual, f"{guard}.{slice_name}")
+
+    def test_unknown_slice_counts_only(self):
+        for guard in ("fixture-guard-a", "fixture-guard-b"):
+            unknown = self.result[guard]["adversarial_split"]["unknown"]
+            self.assertEqual(unknown, {"eligible_total": 3}, guard)
+
+    def test_slice_conservation(self):
+        for guard in ("fixture-guard-a", "fixture-guard-b"):
+            split = self.result[guard]["adversarial_split"]
+            total = (split["adversarial"]["buckets"]["head_binary"]["eligible_total"]
+                     + split["non_adversarial"]["buckets"]["head_binary"]["eligible_total"]
+                     + split["unknown"]["eligible_total"])
+            full = self.result[guard]["buckets"]["head_binary"]["eligible_total"]
+            self.assertEqual(total, full, guard)
+
+    def test_empty_slice_buckets_are_omitted(self):
+        # no pair records anywhere; no probes in the adversarial=true slice
+        for guard in ("fixture-guard-a", "fixture-guard-b"):
+            split = self.result[guard]["adversarial_split"]
+            self.assertNotIn("pair_response_harm", split["adversarial"]["buckets"], guard)
+            self.assertNotIn("pair_response_harm", split["non_adversarial"]["buckets"], guard)
+            self.assertNotIn("over_refusal_probe", split["adversarial"]["buckets"], guard)
+
+    def test_probe_subbucket_in_non_adversarial(self):
+        # hand value: probes 0011 (flagged by both guards) + 0012 (passed) -> rate 0.5
+        for guard in ("fixture-guard-a", "fixture-guard-b"):
+            probe = self.result[guard]["adversarial_split"]["non_adversarial"]["buckets"]["over_refusal_probe"]
+            self.assertEqual(probe["eligible_total"], 2, guard)
+            self.assertAlmostEqual(probe["over_refusal_rate"]["answered_only"], 0.5, msg=guard)
+            self.assertTrue(probe["low_sample_warning"], guard)
+
+    def test_no_flag_means_no_section(self):
+        plain = self.plain_result()
+        for guard in ("fixture-guard-a", "fixture-guard-b"):
+            self.assertNotIn("adversarial_split", plain[guard])
+
+
 class TestLoudRefusals(unittest.TestCase):
-    def test_reserved_flags_exit_1(self):
-        # M2 note: --by-category is implemented (task 3) and left this list;
-        # only still-reserved flags must keep refusing loudly.
-        for flag in ("--adversarial-split",):
-            code, out = run_metrics([
-                "--predictions", str(FIXTURES / "mini_predictions.jsonl"),
-                "--dataset", str(FIXTURES / "metrics_dataset.jsonl"),
-                "--output-dir", str(FIXTURES),  # never written
-                flag,
-            ])
-            self.assertEqual(code, 1, flag)
-            self.assertIn("not implemented", out)
+    # M2 note: test_reserved_flags_exit_1 was removed in task 4 — both reserved
+    # flags are now implemented (spec-mandated replacement of the loud refusal);
+    # their behavior is locked by TestByCategory / TestAdversarialSplit instead.
 
     def test_unjoinable_ids_exit_1(self):
         code, out = run_metrics([
