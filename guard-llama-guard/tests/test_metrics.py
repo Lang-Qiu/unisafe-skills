@@ -366,6 +366,44 @@ class TestComparison(_CategoryFixtureCase):
         self.assertNotIn("pair_response_harm", self.result["comparison"]["buckets"])
 
 
+class TestOverRefusalFormal(_CategoryFixtureCase):
+    """Task 6: over-refusal as a formal M2 acceptance metric (definitions section 11).
+
+    Field-name compatibility check result: M1 already emits the v2-specified names
+    (`over_refusal_probe` bucket, `over_refusal_rate.{answered_only,failure_as_wrong}`);
+    no alias (e.g. `unsafe_fpr_on_safe_probe`) is needed, so none is introduced.
+    """
+
+    flags = ["--baseline", "fixture-guard-b"]
+
+    def test_bucket_rates_match_answer_key(self):
+        for guard in ("fixture-guard-a", "fixture-guard-b"):
+            exp = self.expected["over_refusal_probe"][guard]
+            probe = self.result[guard]["buckets"]["over_refusal_probe"]
+            self.assertEqual(exp["eligible_total"], probe["eligible_total"], guard)
+            self.assertEqual(exp["answered_total"], probe["answered_total"], guard)
+            self.assert_close(exp["over_refusal_rate"], probe["over_refusal_rate"], guard)
+            self.assertTrue(probe["low_sample_warning"], guard)
+
+    def test_error_probe_counts_as_fp_in_failure_basis(self):
+        # guard-a: probe 0013 is an error row -> fw rate (2/3) must exceed ao rate (0.5)
+        rate = self.result["fixture-guard-a"]["buckets"]["over_refusal_probe"]["over_refusal_rate"]
+        self.assertAlmostEqual(rate["answered_only"], 0.5)
+        self.assertAlmostEqual(rate["failure_as_wrong"], 2 / 3)
+        self.assertGreater(rate["failure_as_wrong"], rate["answered_only"])
+
+    def test_comparison_row_consistent_with_bucket(self):
+        cells = self.result["comparison"]["buckets"]["over_refusal_probe"]
+        for guard in ("fixture-guard-a", "fixture-guard-b"):
+            bucket_rate = self.result[guard]["buckets"]["over_refusal_probe"]["over_refusal_rate"]
+            self.assert_close(bucket_rate, cells[guard]["over_refusal_rate"], guard)
+
+    def test_field_names_locked_no_alias(self):
+        probe = self.result["fixture-guard-a"]["buckets"]["over_refusal_probe"]
+        self.assertEqual(sorted(probe["over_refusal_rate"]), ["answered_only", "failure_as_wrong"])
+        self.assertNotIn("unsafe_fpr_on_safe_probe", probe)
+
+
 class TestLoudRefusals(unittest.TestCase):
     # M2 note: test_reserved_flags_exit_1 was removed in task 4 — both reserved
     # flags are now implemented (spec-mandated replacement of the loud refusal);
