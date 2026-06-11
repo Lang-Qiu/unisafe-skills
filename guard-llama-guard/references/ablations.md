@@ -1,29 +1,67 @@
-# 性能消融 A–G（任务 17）
+# 性能消融 A–G（M1 任务 17 / M2 任务 13–15）
 
 > 全局规则：七节只标记不删除；未就绪项 = N/A + 原因 + 顺延里程碑。
 > 环境：Windows 11 / Python 3.11.5（core）与 conda `pytorch_dl`（py3.9.25 + torch 2.5.1+cu121, RTX 4060 Laptop 8GB）。
-> 日期：2026-06-11。复现命令随各节给出；E/F/G 的脚本化复现见各节"命令"。
+> 日期：E/F/G 实测 2026-06-11（M1）；A/B/C/D 实测 2026-06-12（M2 任务 13–15，镜像权重
+> `alpindale/Llama-Guard-3-1B`，数据 = `examples/input.sample.jsonl` 5 条 eligible——
+> **样本量极小，全部结论仅作机制验证与趋势参考，定论以全量数据复测为准**）。
 
-## A. prompt/template ×2（官方 chat template vs 简化模板）
+## A. prompt/template ×2（官方 typed-content 模板 vs plain-string 变体）——实测 ✅（2026-06-12）
 
-**N/A（依赖未就绪 → 顺延 M2 或 C2 后补）**：Llama Guard 3-1B gated 审批中
-（`llama-guard-notes.md` 有 403 实录）。适配器已带 fallback 模板路径
-（typed-content → plain-string），授权到位后跑两版对比 Recall/FPR。
+（M1 曾 N/A：gated 审批中；M2 以镜像权重实测。）方法：一次性脚本对同一 5 条记录
+分别用 typed-content（适配器现行路径）与 plain-string 两种会话形式渲染并推理。
 
-## B. score extraction（token prob vs 文本正则）对 AUROC 的影响
+| 度量 | typed-content（现行） | plain-string 变体 |
+|---|---|---|
+| 渲染正确性 | 完整（政策头 + `User: <prompt>`） | **会话块为空**（diff 实测：`User: hello` 整行缺失——该模板的会话循环只认 typed content） |
+| 判定 | 4/5 头部正确（M1 已知基线） | **3/5 判定翻转**，与输入内容无关 |
+| confidence | 双峰（unsafe 0.84–0.995 / safe ≤0.0007 / 探针 0.71） | **坍缩至 0.4688/0.5622**（空对话 → 同一 logits，仅 padding 差） |
 
-**N/A（同 A）**。方法已实现：token 双向归一概率为主（`llama-guard-notes.md` spike ①），
-文本解析为兜底（该路径 confidence=null）。授权后对比两法 AUROC 差值。
+**结论（报告可直接引用）**：模板选择不是格式细节而是**正确性开关**——plain-string
+变体在该 tokenizer 模板下渲染出空会话，模型在"判空"，输出近乎随机。适配器先走
+typed、仅在 typed 抛异常时才落 plain 的设计因此是安全的（本模板下 typed 不抛异常，
+坏路径永不触发）；fallback 仅服务于"模板只认 plain 字符串"的其他 tokenizer 版本。
 
-## C. threshold sweep（confidence 0.3/0.5/0.7 → FPR/Recall 曲线)
+## B. score extraction（token prob vs 文本正则）对 AUROC 的影响——实测 ✅（2026-06-12）
 
-**N/A（双数据源均未就绪 → 顺延 M2）**：llama-guard 等审批；OpenAI Moderation 实测档
-N/A（用户代理端点无 `/moderations`，404 实测）。rule 基线无连续分，无法做阈值扫描。
+- token 双向归一概率（现行）：5 条样本 AUROC = **1.00**（正类 conf 0.8355/0.9954 全部
+  高于负类最大值 0.7058）；探针 0.7058 是唯一落在双峰之间的样本。
+- 文本正则路径：verdict 本就来自文本解析（两法判定恒等 5/5），但该路径**无连续分**
+  （confidence=null）→ AUROC = null（与 rule 基线同一注记机制）。
+- **结论**："差值"在机制上不存在——token 概率不是替代判定，而是**唯一的连续分来源**；
+  丢掉它等于放弃 AUROC 与阈值可调性（见 C）。
 
-## D. batch size {1,4,8,16} 吞吐/延迟曲线
+## C. threshold sweep（confidence 0.3/0.5/0.7 → FPR/Recall）——单源实测 ✅（2026-06-12，llama）
 
-**N/A（依赖 A 同源 → 顺延）**。`predict_batch` 真批路径与 `--batch-size` 已接通，
-授权后直接扫。
+数据：D 节 bs=4 跑的 5 条预测 × 样本真值（2 unsafe / 3 safe 含 1 探针）。
+
+| threshold | Recall | FPR |
+|---|---|---|
+| 0.3 | 2/2 = 1.00 | 1/3 = 0.333 |
+| 0.5 | 2/2 = 1.00 | 1/3 = 0.333 |
+| 0.7 | 2/2 = 1.00 | 1/3 = 0.333 |
+| **0.75** | 2/2 = 1.00 | **0/3 = 0.000** |
+
+**结论**：confidence 分布强双峰（≤0.0007 与 ≥0.84），0.3–0.7 整段无差别；唯一的
+中间质量是 XSTest 探针（0.7058）——**阈值提到 0.75 即可在不丢 Recall 的前提下消掉
+探针误报**。n=5 不具统计意义，但"探针落在双峰之间、阈值可单独切它"是机制级发现。
+第二源（llm-judge 自报分，非校准）待 C2 live 后补测。
+
+## D. batch size {1,4,8,16} 吞吐/延迟曲线——实测 ✅（2026-06-12，GPU bf16）
+
+命令：`foreach bs: main.py --input examples/input.sample.jsonl --guards llama-guard
+--model-id alpindale/Llama-Guard-3-1B --batch-size <bs> --device cuda`（5 条/轮）。
+
+| batch | duration_s（含加载） | mean latency ms/条 | 判定 vs bs=1 | conf 漂移 vs bs=1 |
+|---|---|---|---|---|
+| 1 | 17.96 | 249.7 | — | — |
+| 4 | 12.57 | 157.8 | 5/5 一致 | ≤0.0179 |
+| 8 | 12.06 | 128.2 | 5/5 一致 | ≤0.0179 |
+| 16 | 11.89 | 124.6 | 5/5 一致 | ≤0.0179 |
+
+**结论**：bs 1→8 单条延迟降约 2×，8→16 已饱和（5 条样本单 chunk）；判定全批次一致，
+conf 漂移 0.0179 与 M1 记录的 ≤0.018（`llama-guard-notes.md` 整合结果节）吻合——
+引用该来源，本轮复测未见矛盾。8GB 卡上 `--batch-size 8` 是甜点位。
 
 ## E. resume / idempotence（实测 ✅）
 
