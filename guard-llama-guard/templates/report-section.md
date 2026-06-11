@@ -36,3 +36,47 @@ answered_only = {{or_answered_only}}，failure_as_wrong = {{or_failure_as_wrong}
 **分析**。{{analysis_paragraph}}
 <!-- 建议素材：规则基线在探针上的设计性高 FPR（"kill a process"）；error 剔除 vs
      计为错判的双口径差值反映 guard 稳定性；AUROC 仅对有连续分的 guard 可比。 -->
+
+<!-- ===== v2（M2）：以下各块对应 metrics.json 的新分节，字段名 1:1 ===== -->
+
+## 多 Guard 对比（metrics.json `comparison`，基线 {{comparison_baseline}}）
+
+<!-- 行 = guard；直接搬 metrics.md 的 comparison 表，或按下行模板逐 guard 填 -->
+
+| guard | eligible | coverage | error_rate | Acc (ao) | Recall (ao) | FPR (ao) | Macro-F1 (ao) | AUROC | Acc (fw) | Macro-F1 (fw) | ΔAcc (ao) | ΔAcc (fw) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| {{cmp_guard}} | {{cmp_eligible_total}} | {{cmp_coverage}} | {{cmp_error_rate}} | {{cmp_ao_accuracy}} | {{cmp_ao_recall}} | {{cmp_ao_fpr}} | {{cmp_ao_macro_f1}} | {{cmp_ao_auroc}} | {{cmp_fw_accuracy}} | {{cmp_fw_macro_f1}} | {{cmp_delta_ao_accuracy}} | {{cmp_delta_fw_accuracy}} |
+
+探针对比（`comparison.buckets.over_refusal_probe`）：{{cmp_probe_summary}}
+<!-- 叙事建议："哪个 guard 更不易过度拒答" + ao/fw 分叉是否由 error 行造成 -->
+
+## 按类别分析（metrics.json `by_category`，仅 answered_only 口径）
+
+| category | support | binary_recall | category_recall | divergence | precision | F1 |
+|---|---|---|---|---|---|---|
+| {{bc_category}} | {{bc_support}} | {{bc_binary_recall}} | {{bc_category_recall}} | {{bc_taxonomy_divergence}} | {{bc_category_precision}} | {{bc_category_f1}} |
+
+macro（support≥1 共 {{bc_categories_counted}} 类）：recall = {{bc_macro_category_recall}}，
+F1 = {{bc_macro_category_f1}}。数据缺口与审计：unsafe_missing_category =
+{{bc_unsafe_missing_category}}，unknown_category_values = {{bc_unknown_category_values}}，
+category_audit = {{bc_category_audit_summary}}。
+<!-- 叙事建议：taxonomy_divergence 是 M0 §4 预告的分歧的量化（如 phishing→S1），
+     binary 对而类别错 ≠ guard 错——写清这层区分是按类别分析的核心论点 -->
+
+## 对抗分桶（metrics.json `adversarial_split`）
+
+| slice | n | Acc (ao) | Recall (ao) | FPR (ao) | Macro-F1 (ao) | Acc (fw) | low_sample |
+|---|---|---|---|---|---|---|---|
+| adversarial | {{adv_n}} | {{adv_ao_accuracy}} | {{adv_ao_recall}} | {{adv_ao_fpr}} | {{adv_ao_macro_f1}} | {{adv_fw_accuracy}} | {{adv_low_sample}} |
+| non_adversarial | {{nadv_n}} | {{nadv_ao_accuracy}} | {{nadv_ao_recall}} | {{nadv_ao_fpr}} | {{nadv_ao_macro_f1}} | {{nadv_fw_accuracy}} | {{nadv_low_sample}} |
+
+unknown 切片（缺布尔 adversarial 字段，仅计数）：{{adv_unknown_n}} 条。
+<!-- 叙事建议：对抗 vs 非对抗的 Recall 差 = 越狱鲁棒性；llm-judge 有指令面，
+     对抗样本可能"说服"判官——与无指令面的 rule/llama 形成对照 -->
+
+## Metric Caveats（报告必须保留的四条）
+
+1. by-category 仅 answered_only 口径（error 行无类别，避免造假精度）；
+2. llm-judge 的 confidence 为自报值，非校准概率，跨 guard AUROC 对比须注明；
+3. 任何 low_sample_warning / low_support_warning 桶不作强结论；
+4. fallback/顶替数据的数字不可作为最终全量结果（提交前以真实数据重跑）。
