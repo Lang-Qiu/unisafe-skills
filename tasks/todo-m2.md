@@ -25,10 +25,10 @@
 
 ## Phase 2 · Core-Full：LLM-as-judge（C1 后；软门，失败不阻塞 C3）
 
-- [ ] 任务 8：`llm_judge.py` + 注册表 + 离线测试（M · 依赖 C1）
-- [ ] 任务 9：`main.py` 接线 `--judge-model` + timeout None 哨兵（S · 依赖 8）
-- [ ] 任务 10：`references/llm-judge-notes.md`（XS · 依赖 8）
-- [ ] 任务 11：live 联调（LLM_JUDGE_LIVE=1；需用户 session 注入 env；无 key 判例仅限显式 llm-judge 命令，smoke/默认 CI 不跑 judge）+ git grep 自查（S · 依赖 8,9,10）
+- [x] 任务 8：`llm_judge.py` + 注册表 + 离线测试（M · 依赖 C1）——18 离线测试（transport mock）；RED 抓到 general_harm 兜底缺失并修复；81 绿（8fa8fed）
+- [x] 任务 9：`main.py` 接线 `--judge-model` + timeout None 哨兵（S · 依赖 8）——None→llama/openai 30 / judge 60 实证；run_metadata 增 timeout_s_effective + judge_model（3a115ec）
+- [x] 任务 10：`references/llm-judge-notes.md`（XS · 依赖 8）——git grep key/URL 零命中（cb11753）
+- [ ] 任务 11：live 联调（**阻塞：权限分类器禁止乙在命令行注入 key——需用户亲自以 `!` 前缀执行 live 命令**；无 key 判例仅限显式 llm-judge 命令，smoke/默认 CI 不跑 judge）+ git grep 自查（S · 依赖 8,9,10）
 - [ ] 任务 12：三 Guard 对比矩阵（顶替数据）+ notes 回填观测（S · 依赖 11）
 
 ### ☐ Checkpoint C2（软门）：spec §6-E 全勾；三 Guard 矩阵存在；失败 → live 档 N/A、对比退回两 Guard
@@ -37,11 +37,11 @@
 
 > 引用纪律：M1 数字须有 `ablations.md`/`llama-guard-notes.md` 记录并标注来源；否则轻量 sanity 复测后再引用。
 
-- [ ] 任务 13：消融 A+B 回填（M · GPU · 依赖 C1）
-- [ ] 任务 14：消融 D batch 扫描（S · GPU · 依赖 C1）
-- [ ] 任务 15：消融 C 阈值扫描（llama 单源先行；judge 源依赖 12 后补）（S · 依赖 C1）
+- [x] 任务 13：消融 A+B 回填（M · GPU · 依赖 C1）——A：plain-string 变体渲染空会话（diff 实证）→ 3/5 判定翻转，模板=正确性开关；B：token 概率是唯一连续分来源，AUROC 1.0 vs null（1d49a96）
+- [x] 任务 14：消融 D batch 扫描（S · GPU · 依赖 C1）——bs 1→8 单条延迟 249.7→128.2ms，16 饱和；判定批不变，conf 漂移 0.0179 与 M1 记录吻合（标注来源）
+- [x] 任务 15：消融 C 阈值扫描（llama 单源 ✅；judge 源依赖 12 后补）——双峰分布，0.3–0.7 无差别；0.75 消探针误报不丢召回（n=5 机制级结论）
 - [ ] 任务 16：trigger eval 实测档（与甲 #3 合并；人工新会话）（S · 依赖 C1 + 甲配合）
-- [ ] 任务 17：report 模板 v2 占位符（XS · 依赖 C1）
+- [x] 任务 17：report 模板 v2 占位符（XS · 依赖 C1）——comparison/by-category/adversarial/Caveats 四块，v1 不动（389ae56）
 - [ ] 任务 18：全量 1,725 条结果档 + E2E 截图（S+等待 · 依赖 C1 + 甲 #2 数据；judge 行依赖 C2 可选；judge 未完则标 **partial**，不得声称三 Guard 全量）
 
 ## Phase 4 · 交付（硬依赖 C1；软吸收 C2/P3/18）
