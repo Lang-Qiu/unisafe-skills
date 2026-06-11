@@ -23,15 +23,15 @@
 - [x] 任务 9：`metrics.py` 双口径 + 四计数字段 + 测试（M · 依赖 3,7；fixtures 可提前）
 - [x] 任务 10：SKILL.md v1 + README + requirements 三分层（S · 依赖 7,8,9）
 
-### ☑ Checkpoint C1：技术项已全过（2026-06-11）——干净 venv（0 第三方包）smoke `--guards rule` 1s 全绿（main/validate/metrics 均 exit 0）；unittest 35 全绿；SKILL.md 152 行、指针全有效；`pip install -r requirements.txt` 零安装实证。**待办：smoke 终端截图存档（需人工）**——M1 交付唯一硬前置
+### ☑ Checkpoint C1：✅ 已通过（2026-06-11）——干净 venv（0 第三方包）smoke `--guards rule` 1s 全绿（main/validate/metrics 均 exit 0）；unittest 35 全绿；SKILL.md 152 行、指针全有效；`pip install -r requirements.txt` 零安装实证；smoke 终端截图已存档 ✅
 
 ## Phase 2 · Core-Full（与 Phase 3 并行；**失败不阻塞 C3**）
 
 - [x] 任务 11：llama_guard.py（spike 前置；predict_batch 真批）（M · 依赖 C1）——spike①实测：safe=19193/unsafe=39257 均单 token；5/5 非 error、conf ∈ (0.0002,0.9954)、S 码保留；批/单判定 5/5 一致（conf 漂移 ≤0.018 如实记录）。**权重用非 gated 镜像 alpindale/Llama-Guard-3-1B（--model-id 切换，官方 gated 仍在批，notes 有溯源与 license 说明）**
 - [x] 任务 12：gated/GPU 联调 + 降级实测（§9-J/N）（S · 依赖 11）——GPU bf16 batch=4 约 0.2s/条；`--device cpu --limit 5` 24.7s 判定与 GPU 一致；降级三判例实测（缺依赖→2/单独→1/真 403→2+FIX+rule 完好）
-- [x] 任务 13：第一版指标 `--limit 200` + E2E 截图（有 fallback 链）（S · 依赖 12；甲数据可选）——两 guard×4 桶×双口径矩阵 ✅；AUROC 仅 llama-guard（head 1.0）；**甲数据未到，examples+fixtures 顶替（10 eligible），按 #2 默认如实记录，提交前重截**；E2E 截图待人工
+- [x] 任务 13：第一版指标 `--limit 200` + E2E 截图（有 fallback 链）（S · 依赖 12；甲数据可选）——两 guard×4 桶×双口径矩阵 ✅；AUROC 仅 llama-guard（head 1.0）；**甲数据未到，examples+fixtures 顶替（10 eligible），按 #2 默认如实记录，提交前重截**；E2E 截图已存档 ✅（2026-06-11）
 
-### ☑ Checkpoint C2：✅ 已达（2026-06-11，镜像权重+顶替数据，均如实记录）——§9-J 全勾；metrics 矩阵存在；**待办：metrics-definitions.md 发甲启动交叉 review（#4）+ E2E 截图**
+### ☑ Checkpoint C2：✅ 已达（2026-06-11，镜像权重+顶替数据，均如实记录）——§9-J 全勾；metrics 矩阵存在；E2E 截图已存档 ✅；#4 已发甲（`M1_待甲确认.md`），等签字
 
 ## Phase 3 · Plus（C1 后并行；可整体顺延 M2）
 
@@ -44,7 +44,7 @@
 
 - [x] 任务 18：SKILL.md 终稿（实测数字软回填；未达项标注不删除）（XS · 依赖 10+C1；13/16 软）——llama sanity 两行回填（5/5、conf 区间、探针行为）、镜像提示入 troubleshooting；152 行、指针全验证
 - [x] 任务 19：`root/M1_summary.md` 追溯表 + N/A 记录 + 已知限制 + Extension Backlog 表（S · 依赖 C1；13–17 状态输入）——五项追溯、指标矩阵内嵌、5 条 N/A、5 条限制、Backlog 6 行（含 MiMo 双协议端点入口）
-- [x] 任务 20：§9 全量验收 + 截图归档 + push + 甲 #4 跟进（S · 依赖 18,19）——§9 A–N 速览入 M1_summary §6；41 测试绿；#4 已在待甲确认中标注就绪；E2E 截图待人工
+- [x] 任务 20：§9 全量验收 + 截图归档 + push + 甲 #4 跟进（S · 依赖 18,19）——§9 A–N 速览入 M1_summary §6；41 测试绿；#4 已在待甲确认中标注就绪；E2E 截图已存档 ✅（2026-06-11）
 
-### ☑ Checkpoint C3 = M1 技术交付：✅（2026-06-11）Core-Minimal 必需项全勾；其余勾或 N/A（见 M1_summary §3/§6）；M1_summary 完整。人工余项：E2E 截图、甲 #2/#3/#4、用户终审
+### ☑ Checkpoint C3 = M1 技术交付：✅（2026-06-11）Core-Minimal 必需项全勾；其余勾或 N/A（见 M1_summary §3/§6）；M1_summary 完整；截图（smoke+E2E）已全部存档 ✅。人工余项：甲 #2/#3/#4、用户终审
 ### ↓ 交付后人工审阅（非技术验收）：用户终审 + 甲 metrics review 反馈处理
