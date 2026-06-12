@@ -10,7 +10,7 @@
 |---|---|
 | 形态 | 单个 `.jsonl` 文件或目录（目录则发现 `*.jsonl`，跳过 `metadata.json` 等裸对象文件，对齐 dataset-format-checker 行为） |
 | 前置 | 数据应已通过 dataset-format-checker（exit 0）；本 skill **不重复做全量格式校验**，只防御性读取 |
-| 消费字段 | `id`；`task_type`；`modality`；`content.prompt` / `content.response`。真值字段仅 `metrics.py` 读取：`label.is_unsafe`、`label.prompt_is_unsafe`、`label.response_is_unsafe`、`risk_metadata.over_refusal_probe`、`risk_metadata.adversarial`（M2 预留） |
+| 消费字段 | `id`；`task_type`；`modality`；`content.prompt` / `content.response`。真值字段仅 `metrics.py` 读取：`label.is_unsafe`、`label.prompt_is_unsafe`、`label.response_is_unsafe`、`risk_metadata.over_refusal_probe`、`risk_metadata.adversarial`（M2 起由 `--adversarial-split` 消费）、`label.canonical_categories`（M2 起由 `--by-category` 消费） |
 | M1 范围 | `task_type ∈ {prompt_only_safety, prompt_response_safety}` 且 `modality == ["text"]`；其余 → out-of-scope skip |
 | Read-only 保证 | 绝不修改输入数据集（任何文件、任何字段） |
 
@@ -73,7 +73,7 @@
 | `guards` | `{requested: [...], completed: [...], failed: {name: reason}}` |
 | `counts` | `{total, eligible, predicted, errors, skipped: {out_of_scope, missing_content}}`——`predicted` = `is_unsafe` 非 null 的行数，`errors` = error 行数，均统计**本次运行新写入**的行（`--resume` 命中的既有行不重复计数，故 resume 全命中时 predicted=0 而文件行数不变）；多 guard 时 `predicted`/`errors` 为各 completed guard 之和。守恒式（行数 = eligible）对**每个** completed guard 的 predictions **文件**始终成立，与是否 resume 无关 |
 | `resume_hits` / `resume_misses` / `resume_hit_rate` | 断点续跑计数（消融 17-E 数据源）：`hits` = 因输出中已存在而跳过重算的 eligible id 数；`misses` = 本次实际新预测数；`hit_rate = hits/(hits+misses)`（分母为 0 时取 0.0）。**始终写出**；未启用 `--resume` 时 `hits=0` |
-| `config` | CLI 参数回显（guards、limit、device、timeout_s、retries、batch_size、model_id、seed、resume、dry_run） |
+| `config` | CLI 参数回显（guards、limit、device、timeout_s、retries、batch_size、model_id、judge_model、seed、resume、dry_run）。M2 起：`timeout_s` 缺省回显 null，各适配器自给默认（llama/openai 30s、llm-judge 60s）；实际生效值按 guard 记录在 `timeout_s_effective` |
 | `env` | `{python, platform, torch?, cuda?, model_revision?}`（未安装/不适用置 null） |
 | `duration_s` | 总耗时（秒） |
 
@@ -84,7 +84,7 @@
 | code | 全局语义 | `main.py` | `validate.py` | `metrics.py` |
 |---|---|---|---|---|
 | **0** | 完全成功 | 请求的 guard 全部成功 | PASS（结构合法 + 覆盖率达标） | 指标完整产出 |
-| **1** | 失败（数据或致命） | fatal：输入不可用 / 输出不可写 / **全部** guard 失败 | FAIL：结构违规、eligible 覆盖率不达标、计数不吻合 | fatal：无可 join 记录 / 参数错 / 未实现旗标（响亮拒绝） |
+| **1** | 失败（数据或致命） | fatal：输入不可用 / 输出不可写 / **全部** guard 失败 | FAIL：结构违规、eligible 覆盖率不达标、计数不吻合 | fatal：无可 join 记录 / 参数错（M1 期此格还含未实现旗标的响亮拒绝；M2 起 `--by-category`/`--adversarial-split` 已实现，该机制留给未来旗标） |
 | **2** | 非数据性降级 | 部分成功：≥1 guard 成功且 ≥1 guard 级失败（gated/缺依赖/缺 key） | 用法/IO 错：目标路径不存在、无可校验文件 | 用法/IO 错 |
 
 判读一律看 **exit code + `RESULT:` 行**（`RESULT: ok|partial|fatal predicted=N errors=N skipped=N`），禁止 `| tail`（管道吞 exit code）。

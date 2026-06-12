@@ -1,12 +1,13 @@
 ---
 name: guard-llama-guard
-description: Run text safety guards (Llama Guard 3, keyword rule baseline, OpenAI
-  Moderation) over unified safety JSONL records and emit unified guard-result JSONL
-  plus evaluation metrics (Accuracy, Macro-F1, Recall, FPR, AUROC, Over-refusal).
-  Use this skill when the user asks to run, evaluate, score, or benchmark a guard or
-  moderation model on a unified safety dataset, or to compute guard safety metrics.
-  Not for building or converting datasets (use dataset-* skills) and not for checking
-  dataset format (use dataset-format-checker).
+description: Run text safety guards (Llama Guard 3, keyword rule baseline, LLM-as-judge,
+  OpenAI Moderation) over unified safety JSONL records and emit unified guard-result
+  JSONL plus evaluation metrics (Accuracy, Macro-F1, Recall, FPR, AUROC, Over-refusal,
+  per-category and adversarial splits, multi-guard comparison). Use this skill when the
+  user asks to run, evaluate, score, compare, or benchmark guards or moderation models
+  on a unified safety dataset, or to compute guard safety metrics. Not for building or
+  converting datasets (use dataset-* skills) and not for checking dataset format (use
+  dataset-format-checker).
 ---
 
 # guard-llama-guard
@@ -20,8 +21,9 @@ never modified. Core loop is pure stdlib (Python >= 3.9, no install, no network)
 
 - "Run Llama Guard on this dataset" / "用 guard 评测这份统一数据集"
 - "Score these guard predictions" / "算一下 guard 的指标（Recall/FPR/AUROC）"
-- "Benchmark the rule baseline against Llama Guard"
-- "How often does the guard over-refuse on XSTest probes?"
+- "Benchmark the rule baseline against Llama Guard" / "Compare the three guards"
+- "How often does the guard over-refuse on XSTest probes?" / "Which guard over-refuses least?"
+- "Break the guard metrics down by category / adversarial vs non-adversarial"
 
 ## When NOT to use
 
@@ -63,7 +65,9 @@ python scripts/main.py --input <unified_dir> --output-dir out --guards rule,llam
 
 Dependency layers: `requirements.txt` = core loop, **comments only, installs nothing**
 (stdlib is enough); `requirements-llama.txt` = Llama Guard path; `requirements-api.txt`
-= optional OpenAI Moderation baseline (Plus).
+= optional OpenAI Moderation baseline (Plus). The `llm-judge` guard needs **no install**
+(stdlib urllib) — only env vars `LLM_JUDGE_API_KEY` (or `LLM_API_KEY`) +
+`LLM_JUDGE_BASE_URL` (OpenAI-compatible /v1), then add `llm-judge` to `--guards`.
 
 ## Input format
 
@@ -87,7 +91,10 @@ One JSON per line (schema: [`schemas/guard_output.schema.json`](schemas/guard_ou
 
 File layout under `--output-dir`: `predictions/<guard>.predictions.jsonl` +
 `metrics/metrics.{json,md}` + `run_metadata.json`. Conservation: prediction lines =
-eligible records (error rows included; skipped records excluded).
+eligible records (error rows included; skipped records excluded). With >=2 guards
+metrics.json also carries a `comparison` pivot (delta vs `--baseline`, default rule);
+`--by-category` / `--adversarial-split` add their sections
+(definitions: [`references/metrics-definitions.md`](references/metrics-definitions.md) v2).
 
 ## Execution steps
 
@@ -96,7 +103,8 @@ eligible records (error rows included; skipped records excluded).
 3. Run `scripts/main.py`; read exit code + `RESULT:` line.
 4. Run `scripts/validate.py <out>/predictions --against <input>` (add
    `--metadata <out>/run_metadata.json` to also cross-check skip counts).
-5. Run `scripts/metrics.py`; deliver `metrics/metrics.md` to the user.
+5. Run `scripts/metrics.py` (add `--by-category --adversarial-split` for the M2
+   analyses); deliver `metrics/metrics.md` to the user.
 
 ## Failure handling
 
@@ -108,8 +116,9 @@ eligible records (error rows included; skipped records excluded).
 
 Rulings: `--guards llama-guard` with no HF token → all-failed → **1**; `--guards
 rule,llama-guard` with no token → rule succeeds → **2**; the smoke (`--guards rule`)
-never needs tokens → **0**. Plus/API guards (OpenAI) stay out of the smoke and default
-CI; missing keys only matter when you explicitly request those guards.
+never needs tokens → **0**. Plus/API guards (OpenAI Moderation, LLM-as-judge) stay out
+of the smoke and default CI; missing keys/env only matter when you explicitly request
+those guards.
 
 Error tiers (full table: [`references/io-contract.md`](references/io-contract.md) §4):
 guard-level failure → skip guard + `FIX:` hint; record-level error → row kept with
@@ -123,9 +132,10 @@ guard-level failure → skip guard + `FIX:` hint; record-level error → row kep
 | validate `--against` | `RESULT: PASS files=1 records=5`, exit 0 |
 | metrics (rule) | head_binary Acc=0.8, Recall=1.0, FPR=0.3333; AUROC `-` (rule has no confidence); over-refusal probe FPR=1.0 with low_sample_warning |
 | golden | output matches `examples/output.sample.jsonl` field-for-field except `runtime.latency_ms` |
-| tests | `python -m unittest discover -s tests` → 41 tests OK (1 opt-in live skip), no keys/network needed |
+| tests | `python -m unittest discover -s tests` → 82 tests OK (2 opt-in live skips), no keys/network needed |
 | llama-guard on the sample (GPU bf16) | 5/5 non-error, head 4/5 correct; unsafe confidences ≥0.83, safe ≤0.001; S codes kept in `raw_output`; ~0.2 s/record after a ~10 s model load (CPU: ~5 s/record) |
 | llama-guard probe behavior | also flags the XSTest homonym probe (conf ≈0.7) — expected, not a bug; see `references/llama-guard-notes.md` |
+| llm-judge on the sample (env set) | 5/5 non-error; judges the probe **safe** (only guard of the three that passes it); ~20–30 s/record on a reasoning endpoint — see `references/llm-judge-notes.md` |
 
 ## Good response pattern
 
@@ -141,12 +151,16 @@ When done, report: the exact commands run, exit codes, the three counts
 | CUDA out of memory | `--device cpu` (slow but works for 1B) or smaller `--batch-size`, or `--limit` |
 | PowerShell passes literal `*.jsonl` | pass the directory instead of a glob; scripts discover `*.jsonl` themselves |
 | AUROC is `-`/null for rule | expected: the rule baseline has no continuous confidence |
-| many timeouts | raise `--timeout-s` (soft timeout: CUDA steps can't be interrupted mid-flight) |
+| many timeouts | raise `--timeout-s` (per-guard defaults: llama/openai 30 s, llm-judge 60 s; soft timeout: CUDA steps can't be interrupted mid-flight) |
+| llm-judge `missing env` | set `LLM_JUDGE_API_KEY` (or `LLM_API_KEY`) + `LLM_JUDGE_BASE_URL`, re-run; no install needed |
 | `RESULT: partial` (exit 2) | some guard failed guard-level; read its `FIX:` line; completed guards' outputs are valid |
 
 ## Safety & limitations
 
 Datasets contain harmful text used strictly for defensive guard evaluation. Guard
 verdicts are predictions, not ground truth — both misses and over-refusals occur (the
-keyword baseline deliberately over-flags homonym probes like "kill a process"). Respect
-model/dataset licenses; never commit HF tokens or API keys (run_metadata redacts them).
+keyword baseline deliberately over-flags homonym probes like "kill a process"). The
+llm-judge confidence is self-reported, **not a calibrated probability**, and adversarial
+records may try to manipulate the judge (hardening + residual risk:
+`references/llm-judge-notes.md`). Respect model/dataset licenses; never commit HF
+tokens or API keys (run_metadata redacts them; judge credentials live only in env vars).
