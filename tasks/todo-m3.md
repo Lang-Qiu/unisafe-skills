@@ -9,8 +9,8 @@
 ## Phase 0 · 前置（两路并行、互不阻塞）
 
 - [x] 任务 1：M0 #5 图像路径契约草拟 + 发甲（S · 依赖无）——五要点 + 影响面 + 时间窗已落 `root/待甲确认.md` #5，推送即启动否决窗口（约至 06-14）
-- [ ] 任务 2：gated 许可确认 + 权重可达性探查（S · **用户协助**）——三种 FIX 文案 + 官方/镜像/不可达结论
-- [ ] 任务 3：transformers 就地升级 + 回归门（M · GPU）——上游 82 测试全绿 + llama sanity 5 条；红则回退 4.46.3 改独立环境（不阻塞 P1）
+- [x] 任务 2：gated 许可确认 + 权重可达性探查——官方 `gated=manual`（需用户申请，审批期同 meta-llama 先例）；**镜像路线可用**：`Nozim6690/hugging-face_shieldgemma-2-4b-it`（无门、全件、config 核验 ShieldGemma2ForImageClassification + SigLIP、8.6GB 双分片）→ 沿 M1 alpindale 模式（默认 model-id 留官方，实跑 `--model-id` 切镜像）；FIX 三形态素材定
+- [x] 任务 3：transformers 就地升级 + 回归门——4.46.3→**4.57.6**（torch 2.5.1+cu121 未动；accelerate 1.10.1、bitsandbytes 0.48.2 同装）；上游 82 测试全绿；llama sanity 5 条判定与 M1 记录逐条一致、conf 漂移 ≤7e-4（< 消融 D 容差 0.0179）；唯一注记：sanity 期间 GPU 被外部进程占用（60%/5.4GB），默认 30s 超时不够 → 用 `--timeout-s 180` 完成，纯延迟对比待 GPU 空闲复测（非门槛项）
 - [ ] 任务 4：4-bit 试装 + policy discovery（S · GPU · 依赖 2,3）——峰值显存实测 + policy 名称/顺序/输出 shape 实录（任务 12 mock 依据）
 
 ### ☑ Checkpoint C0a（硬门）：✅（2026-06-12）#5 已推送，否决窗口启动；P1 解锁
