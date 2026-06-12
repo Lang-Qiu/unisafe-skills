@@ -18,6 +18,9 @@ that differs from upstream is a defect):
      raw_output.image_index = 0 (post-annotated centrally, adapters stay
      modality-agnostic). run_metadata.warnings appears only when non-empty.
   5. _probe_env keyed on shieldgemma2 (the torch-dependent guard here).
+  6. AD-8: run_metadata.warnings.unknown_policy_count aggregated from adapters
+     after each guard completes (unmapped ShieldGemma policy names, audited
+     instead of guessed).
 
 Reads unified records (dataset-format-checker PASS data), routes them per
 references/io-contract.md section 2, runs the requested guard adapters and
@@ -220,6 +223,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         errors = 0
         resume_hits = 0
         resume_misses = 0
+        unknown_policy_count = 0
 
         if not args.dry_run:
             unknown = [name for name in requested if name not in known_guards()]
@@ -317,6 +321,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                         if len(buffer) >= chunk_size:
                             flush_buffer()
                     flush_buffer()
+                unknown_policy_count += getattr(adapter, "unknown_policy_count", 0)
                 completed.append(name)
                 print(f"guard {name}: wrote {pred_path}")
 
@@ -362,6 +367,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     warnings: Dict[str, Any] = {}
     if multi_image_records:
         warnings["multi_image_records"] = multi_image_records
+    if unknown_policy_count:
+        warnings["unknown_policy_count"] = unknown_policy_count
     if warnings:  # only when non-empty (no empty placeholders, M2 AD-2 lineage)
         run_metadata["warnings"] = warnings
     with open(output_dir / "run_metadata.json", "w", encoding="utf-8", newline="\n") as fh:

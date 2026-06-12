@@ -30,7 +30,7 @@
 
 ## Phase 2 · Core-Full：ShieldGemma 2（C0b 后；提交在 C1 后；软门）
 
-- [ ] 任务 12：shieldgemma2.py 适配器（spec §5 全项 + unknown_policy_count 审计）+ mock 离线测试（以任务 4 实录为准）+ requirements-shieldgemma.txt + exit 判例补全（M · 依赖 C1, 任务 4）
+- [x] 任务 12：shieldgemma2.py 适配器（spec §5 全项 + unknown_policy_count 审计 + NaN 防御行）+ mock 离线测试 17 例（以任务 4 实录形态为准）+ requirements 上界 <4.53（torch 2.5 耦合注释）+ exit 判例补全（确定性：可用性 seam 模拟缺依赖 → 单跑 1/同跑 2）（M · 依赖 C1, 任务 4）——84 测试绿（1 live skip）
 - [ ] 任务 13：live sanity（`SHIELDGEMMA2_LIVE=1`：合成图判定 + M0 样本 AD-9 路径 + 显存/延迟/policy 对账）+ `references/shieldgemma2-notes.md` 落库 + 首版两 guard comparison 表（S · GPU+权重 · 依赖 12, C0b）
 
 ### ☐ Checkpoint C2（软门）：spec §6-E 全勾；两 guard 矩阵存在（截图素材）

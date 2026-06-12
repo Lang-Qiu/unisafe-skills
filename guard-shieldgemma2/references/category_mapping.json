@@ -28,9 +28,12 @@
   "fallback": "other",
   "unsafe_no_category_fallback": "general_harm",
   "shieldgemma2": {
-    "$comment": "3 策略 -> canonical（M0 §4 原文）。键 = M0 显示名；P0 policy discovery（任务 4）实录的 processor 内部键名若不同，适配器在归一化层对齐到本表（别名在任务 12 落地），表外策略名不私自映射 -> unknown_policy_count 审计（M3_SPEC §5）。",
+    "$comment": "3 策略 -> canonical（M0 §4 原文）。双收两套键：M0 显示名 + P0 policy discovery（任务 4，transformers 4.51.3）实录的 processor 运行时键名 dangerous/sexual/violence（snake_case）。表外策略名不私自映射 -> unknown_policy_count 审计（M3_SPEC §5、plan AD-8）。",
     "Sexually Explicit": ["sexual_content"],
     "Violence & Gore": ["violence"],
-    "Dangerous Content": ["general_harm"]
+    "Dangerous Content": ["general_harm"],
+    "sexual": ["sexual_content"],
+    "violence": ["violence"],
+    "dangerous": ["general_harm"]
   }
 }

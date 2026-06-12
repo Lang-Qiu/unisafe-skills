@@ -2,7 +2,7 @@
 
 Derived from guard-llama-guard@8fa8fedcafb5b788bbdac0923ac07514e150d52f
 scripts/guards/__init__.py. Image adaptation: registry entries only —
-caption-rule (zero-dep pipeline baseline) now; shieldgemma2 joins in M3 task 12.
+caption-rule (zero-dep pipeline baseline) + shieldgemma2 (Core-Full).
 
 Importing this package must never require third-party dependencies; each
 adapter module is only imported when requested (so `get_adapter('caption-rule')`
@@ -15,6 +15,7 @@ from typing import List
 
 _REGISTRY = {
     "caption-rule": ("guards.caption_rule", "CaptionRuleGuard"),
+    "shieldgemma2": ("guards.shieldgemma2", "ShieldGemma2Guard"),
 }
 
 
