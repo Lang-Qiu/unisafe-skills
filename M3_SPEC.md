@@ -1,6 +1,6 @@
 # M3 Spec：多模态亮点 — `guard-shieldgemma2`（UnsafeBench + ShieldGemma 2，小样本；乙侧部分）
 
-> 状态：**草案，待评审**（2026-06-12）；§9 五个开放问题待用户拍板后才定稿；⛔ **评审通过 + 用户显式放行后才进 tasks 阶段**（沿 M2 惯例）。
+> 状态：**评审通过，五项已拍板**（2026-06-12，§9；含 judge-vision 探测实测定案）；⛔ **用户显式放行后才进 tasks 阶段**（沿 M2 惯例）。
 > 推导依据：`团队分工计划.md` §6（M3 定义：甲建数据 → 乙接）与 §7（乙侧 16%：guard-shieldgemma2 + 报告 Guard/结果章节）、`M0_接口约定.md` §3/§4/§5（图像真值、ShieldGemma 三策略映射、输出 schema 全部既有）、`guard-shieldgemma2/` M0 脚手架、M1/M2 已交付实现（注册表、metrics 分桶、双口径、exit 契约）。
 > 与 M1/M2 的关系：M3 **新建 skill 目录交付**（脚手架已在），但不发明新契约——M0 的输出 schema、22 类映射、指标定义、exit code 三态、错误三分法、守恒式、不删项规则**原样继承**，本文不复述。`dataset-unsafebench` 属甲，本 spec 只约定接口期望，不涉其实现。
 
@@ -13,9 +13,9 @@
 3. **真值字段零新增**：图像真值 = `label.is_unsafe` + `label.canonical_categories`（M0 §3 图像安全行）。**唯一新增契约是文件布局级补充**：`content.images[].path` 的解析基准 + 缺图处理（§4.2），按 M1 #1 模式走默认接受制 → 追加 `M1_待甲确认.md` **#5**。
 4. **甲数据解耦**：`dataset-unsafebench` 仍是脚手架、UnsafeBench（HF gated）未动 → 开发用 M0 样本 2 条 image 记录 + 乙自造 fixtures；真数据到位（checker exit 0）后一条命令重出（M1 #2 模式三度复用）。**数据未到不阻塞 M3 技术交付**。
 5. **铁律延续**：key/代理 URL/HF token 只活在运行时环境变量；模型权重与数据集 dump 不入库。**乙自造的 <1KB 合成测试图（纯色/几何图形，脚本可再生）允许入库**——它是 fixture，不是数据集 dump；真实 UnsafeBench 图像一张都不进 git。
-6. **显存约束是硬现实**：RTX 4060 8GB（实测空闲 ~6GB），ShieldGemma 2 为 4B（Gemma 3 架构含视觉塔），fp16 ≈ 8.6GB 装不下 → **4-bit NF4 量化为 M3 基准口径**（待 §9-3 确认）；高精度仅做子集对照消融。
+6. **显存约束是硬现实**：RTX 4060 8GB（实测空闲 ~6GB），ShieldGemma 2 为 4B（Gemma 3 架构含视觉塔），fp16 ≈ 8.6GB 装不下 → **4-bit NF4 量化为 M3 基准口径**（§9-3 已确认）；高精度仅做子集对照消融。
 7. **transformers 升级是前置**：conda 环境 4.46.3 无 ShieldGemma2 模型类（需 ≥4.50）；升级策略见 §9-2，无论选哪种，**回归门 = guard-llama-guard 全部 82 测试 + llama sanity 5 条**，回归红则回退锁定 4.46.3 并改走独立环境。
-8. **OpenAI omni-moderation 图像交叉验证降级为 L3**：仍无真 OpenAI key（M1 实测代理无 `/moderations`）；脚手架原计划的该项只留接口。图像侧第二真实 Guard 的候选改为 **judge-vision**（MiMo 多模态探测，§9-4 待授权）。
+8. **OpenAI omni-moderation 图像交叉验证降级为 L3**：仍无真 OpenAI key（M1 实测代理无 `/moderations`）；脚手架原计划的该项只留接口。图像侧第二真实 Guard 的候选 **judge-vision 已被探测否决**：MiMo 代理对 image 输入返回 404 `No endpoints found that support image input`（2026-06-12 实测，§9-4）→ 图像侧 comparison = caption-rule vs shieldgemma2。
 9. **ShieldGemma 2 只评图像本体**（image_safety）；`image_text_safety`/视频/音频不在 M3（out-of-scope skip 链路照常计数）。多图记录评首图 + warning 计数（UnsafeBench 为单图，此为防御性约定）。
 
 ---
@@ -46,7 +46,7 @@
 
 | 项 | 内容 |
 |---|---|
-| 包含 | **judge-vision**（MiMo 多模态探测通过后：复用 llm_judge 模式带 image 输入，图像侧第二真实 Guard → comparison ≥2 真实 guard；§9-4 待授权）；**量化消融**（4-bit vs CPU 高精度，10–20 张子集：判定翻转数 + confidence 漂移 + 延迟）；**阈值扫描**（per-policy yes 概率连续分现成）；trigger eval 增量（图文互斥正负例实测）；**真实 UnsafeBench 200–500 张结果档**（等甲，checker exit 0 为门）；report 模板图像章节；taxonomy 粗细分歧分析（11 类真值 vs 3 策略——divergence 计数是现成报告素材） |
+| 包含 | ~~judge-vision~~（探测否决，移入 L3，§9-4）；**量化消融**（4-bit vs CPU 高精度，10–20 张子集：判定翻转数 + confidence 漂移 + 延迟）；**阈值扫描**（per-policy yes 概率连续分现成）；trigger eval 增量（图文互斥正负例实测）；**真实 UnsafeBench 200–500 张结果档**（等甲，checker exit 0 为门）；report 模板图像章节；taxonomy 粗细分歧分析（11 类真值 vs 3 策略——divergence 计数是现成报告素材） |
 | 为什么在这层 | 消融/对比是报告 30% 的素材；真数据与 judge-vision 各有外部依赖（甲 / 用户授权） |
 | 成功标准 | 各出数字表进 notes/ablations；做不到逐项 N/A + 原因 + 顺延 |
 | 失败降级 | N/A + 顺延 M4 报告期；真数据未到 → M0 样本 + 合成图矩阵 + "提交前重跑"标记 |
@@ -57,6 +57,7 @@
 | 项 | 留的接口 | 去向 |
 |---|---|---|
 | OpenAI omni-moderation 图像档 | 注册表 + schema 已通用 | 真 OpenAI key 到手即做 |
+| judge-vision（多模态 LLM 判官） | llm_judge 适配器协议可带 image 内容 | MiMo 代理不收 image（404 实测，§9-4）；换支持视觉的端点即可做 |
 | `image_text_safety` 多模态成对评测 | task_type 路由表预留枚举 | M4 后/加分 |
 | 视频/音频模态 | schema `modality` 枚举已含 | 不做 |
 | 官方权重 vs 镜像切换 | `--model-id` 参数化（M1 同款） | 镜像情况 P0 探明 |
@@ -156,7 +157,7 @@
 - [ ] transformers 升级回归门：guard-llama-guard 82 测试全绿 + llama sanity 5 条复测通过（红则回退并改独立环境）
 
 **F. 对比与消融（Plus，逐项可 N/A）**
-- [ ] judge-vision 探测结论记录（可行 → 适配器 + 双 guard 对比；不可行 → N/A+原因）
+- [x] judge-vision 探测结论已定案（spec 评审期实测：代理不收 image，404 → 适配器 N/A+原因，入 M3_summary；对比 = caption-rule vs shieldgemma2）
 - [ ] 量化消融 / 阈值扫描 / trigger eval 图文互斥实测——各出数字表或 N/A
 
 **G. 真实数据档（甲依赖，非阻塞）**
@@ -175,8 +176,8 @@ P0 前置探查（半天；C0 前全清）
   T0.1 transformers 升级 + 回归门（§9-2 路线）─┐
   T0.2 gated 许可确认 + 权重可达性（官方/镜像）─┤
   T0.3 4-bit 显存试装（峰值实测）──────────────┼─► C0
-  T0.4 M0 #5 路径契约草拟 + 发甲（默认接受制）──┤
-  T0.5 MiMo 多模态低成本探测（§9-4 若授权）────┘
+  T0.4 M0 #5 路径契约草拟 + 发甲（默认接受制）──┘
+  T0.5 MiMo 多模态探测 ✅ 已于 spec 评审期实测（不支持 → judge-vision N/A，§9-4）
 
 P1 Core-Minimal（1–2 天，C0 后；零依赖）
   T1.1 骨架 + main.py 路由 + caption-rule ──┐
@@ -185,7 +186,7 @@ P1 Core-Minimal（1–2 天，C0 后；零依赖）
   T1.4 缺图错误三用例 + 守恒/exit 测试 ──────┘
 
 P2 Core-Full（C0 后可与 P1 尾部并行）        P3 Plus（C2 后/并行）
-  T2.1 shieldgemma2.py + mock 测试            T3.1 judge-vision（若 T0.5 通过）
+  T2.1 shieldgemma2.py + mock 测试            T3.1 judge-vision N/A（T0.5 探测否决，不删项）
   T2.2 live sanity（合成图+M0 样本）─► C2     T3.2 量化消融 + 阈值扫描
                                               T3.3 trigger eval 图文互斥实测
                                               T3.4 report 模板图像章节
@@ -196,7 +197,7 @@ P4 交付（硬依赖 C1；软吸收 C2/P3/G）
 
 | Checkpoint | 成功条件 | 失败处理 |
 |---|---|---|
-| **C0** | T0.1–T0.4 全清（T0.5 可 N/A） | 升级回归红 → 独立环境路线；权重不可达 → L1 整体降 N/A，L0 照常 |
+| **C0** | T0.1–T0.4 全清（T0.5 已于 spec 期定案） | 升级回归红 → 独立环境路线；权重不可达 → L1 整体降 N/A，L0 照常 |
 | **C1** | §6-A/B/C/D 全勾；零依赖全绿 | 阻塞修复，不进交付 |
 | **C2**（软） | §6-E 全勾 | 显存/权重不可行 → live N/A，单 guard 交付 |
 | **C3** | §6-H 全勾；F/G 勾或 N/A | 未勾项 N/A+原因+顺延，入 M3_summary |
@@ -211,10 +212,12 @@ P4 交付（硬依赖 C1；软吸收 C2/P3/G）
 
 ---
 
-## 9. 不确定项（待用户拍板后定稿）
+## 9. 不确定项 → 已决事项（2026-06-12 用户拍板）
 
-1. **同源代码策略**：A. **受控复制**——validate.py/schema/metrics 核心复制进本 skill + 头部注明同源 + 测试断言 schema 逐字节一致（**推荐**：skill 独立可跑是评分硬指标，分发 zip 不依赖相对路径）；B. 跨目录 import guard-llama-guard。
-2. **transformers 升级路线**：A. 就地升级 pytorch_dl 至最新 4.x + 回归门，红则回退（**推荐**：省 2.5GB 重复 torch，回归门已定义）；B. 独立 conda/venv 环境。
-3. **量化口径确认**：4-bit NF4 为 M3 基准口径，高精度只做 10–20 张子集消融——确认/否决。
-4. **MiMo 多模态探测授权**：是否授权用你的 key 做一次低成本探测（2–3 次带图请求验证 `mimo-v2.5-pro` 是否收 image 输入）？通过则 judge-vision 进 Plus 作图像侧第二真实 Guard；不授权则 comparison 退回 caption-rule vs shieldgemma2。
-5. **分支策略**：脚手架写 `feat/guard-shieldgemma2`，但 M1/M2 既定流程是直推 main——**推荐沿用 main**；确认/否决。
+1. ✅ **同源代码 = A 受控复制**：validate.py/schema/metrics 核心复制进本 skill + 头部同源注记 + 测试断言 schema 与 guard-llama-guard 逐字节一致；skill 独立可跑，分发 zip 不依赖相对路径。
+2. ✅ **transformers = A 就地升级**：pytorch_dl 升至最新 4.x + 回归门（guard-llama-guard 82 测试全绿 + llama sanity 5 条）；回归红 → 回退锁定 4.46.3 并改走独立环境。
+3. ✅ **量化口径确认**：4-bit NF4 为 M3 基准；高精度只做 10–20 张子集消融。
+4. ✅ **MiMo 多模态探测：已授权并于 spec 评审期实测（2026-06-12）**——红/蓝两张合成图的 `chat/completions` image_url 请求均返回 404 `No endpoints found that support image input`（端点能力缺失，与 M1 的 `/moderations` 404 同性质）→ **judge-vision N/A**，图像侧 comparison = caption-rule vs shieldgemma2；换支持视觉的端点即可复活（L3 表已留接口）。
+5. ✅ **分支 = main 直推**（M1/M2 既定流程延续；脚手架的 `feat/guard-shieldgemma2` 注记作废，L0 重写 SKILL.md/README 时一并清除）。
+
+> 执行放行点保留：用户放行后才进 tasks 阶段（先 `tasks/plan-m3.md` / `todo-m3.md` 评审，再实现）。
