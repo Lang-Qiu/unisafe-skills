@@ -31,9 +31,9 @@
 ## Phase 2 · Core-Full：ShieldGemma 2（C0b 后；提交在 C1 后；软门）
 
 - [x] 任务 12：shieldgemma2.py 适配器（spec §5 全项 + unknown_policy_count 审计 + NaN 防御行）+ mock 离线测试 17 例（以任务 4 实录形态为准）+ requirements 上界 <4.53（torch 2.5 耦合注释）+ exit 判例补全（确定性：可用性 seam 模拟缺依赖 → 单跑 1/同跑 2）（M · 依赖 C1, 任务 4）——84 测试绿（1 live skip）
-- [ ] 任务 13：live sanity（`SHIELDGEMMA2_LIVE=1`：合成图判定 + M0 样本 AD-9 路径 + 显存/延迟/policy 对账）+ `references/shieldgemma2-notes.md` 落库 + 首版两 guard comparison 表（S · GPU+权重 · 依赖 12, C0b）
+- [x] 任务 13：live sanity + notes 落库 + 首版两 guard comparison 表（S · GPU+权重 · 依赖 12, C0b）——live 17/17 全绿；纯色良性图 safe（yes≤0.0076，与 CPU bf16 参考同向）；**棋盘格 OOD 误报 dangerous 0.637**（R8 预案命中、阈值敏感→任务 14 素材）；多图首图约定被相同分数实证；稳态 ~1.9s/图；双 guard 链路 exit 0 + validate PASS + comparison 两行（`out_m3_twoguard/metrics/`，截图素材）；by-category 出活的粗细分歧（divergence=1 + general_harm 纯 FP）；M0 样本 AD-9 路径并入任务 17 真数据档一起跑（同为顶替性质，不重复跑两次）
 
-### ☐ Checkpoint C2（软门）：spec §6-E 全勾；两 guard 矩阵存在（截图素材）
+### ☑ Checkpoint C2（软门）：✅（2026-06-12）spec §6-E 实质全勾（良性=纯色图 safe ✅；棋盘格 FP 如实记录 + 真实照片复测留真数据档，R8 处置）；两 guard 矩阵存在（截图素材）
 
 ## Phase 3 · Plus（C2 后或并行；逐项可 N/A）
 

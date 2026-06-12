@@ -40,7 +40,9 @@ then `RESULT: ok guards=1 joined=6`. The 3 errors are deliberate demo rows
 
 ShieldGemma 2 weights: the official `google/shieldgemma-2-4b-it` is gated
 (license click + `hf auth login`). A community mirror can be substituted via
-`--model-id` (see `references/shieldgemma2-notes.md` once live results land).
+`--model-id`; weights route, version coupling (torch 2.5.x needs
+transformers <4.53), quantization basis (int8 — the 4-bit path NaNs on this
+stack) and live measurements: [`references/shieldgemma2-notes.md`](references/shieldgemma2-notes.md).
 
 ## Input
 
