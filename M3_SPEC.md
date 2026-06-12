@@ -10,7 +10,7 @@
 
 1. **M3 乙侧范围 = `guard-shieldgemma2` 全量交付**：统一 image_safety 输入 → ShieldGemma 2（本地）判定 → 统一 Guard 结果 schema → 指标。叙事卖点 = **同一套 schema/接口跨模态零改动**（分工 §0 统一叙事）。
 2. **小样本纪律**：评测目标 200–500 张（脚手架既定）；不追求全量 UnsafeBench；多模态不拖垮文本主干（分工 §8）。
-3. **真值字段零新增**：图像真值 = `label.is_unsafe` + `label.canonical_categories`（M0 §3 图像安全行）。**唯一新增契约是文件布局级补充**：`content.images[].path` 的解析基准 + 缺图处理（§4.2），按 M1 #1 模式走默认接受制 → 追加 `M1_待甲确认.md` **#5**。
+3. **真值字段零新增**：图像真值 = `label.is_unsafe` + `label.canonical_categories`（M0 §3 图像安全行）。**唯一新增契约是文件布局级补充**：`content.images[].path` 的解析基准 + 缺图处理（§4.2），按 M1 #1 模式走默认接受制 → 追加 `待甲确认.md` **#5**。
 4. **甲数据解耦**：`dataset-unsafebench` 仍是脚手架、UnsafeBench（HF gated）未动 → 开发用 M0 样本 2 条 image 记录 + 乙自造 fixtures；真数据到位（checker exit 0）后一条命令重出（M1 #2 模式三度复用）。**数据未到不阻塞 M3 技术交付**。
 5. **铁律延续**：key/代理 URL/HF token 只活在运行时环境变量；模型权重与数据集 dump 不入库。**乙自造的 <1KB 合成测试图（纯色/几何图形，脚本可再生）允许入库**——它是 fixture，不是数据集 dump；真实 UnsafeBench 图像一张都不进 git。
 6. **显存约束是硬现实**：RTX 4060 8GB（实测空闲 ~6GB），ShieldGemma 2 为 4B（Gemma 3 架构含视觉塔），fp16 ≈ 8.6GB 装不下 → **4-bit NF4 量化为 M3 基准口径**（§9-3 已确认）；高精度仅做子集对照消融。
@@ -94,7 +94,7 @@
 | `references/shieldgemma2-notes.md` | 新增 | 权重/量化/延迟/校准告诫/policy 原文 | L1 |
 | `references/trigger-eval.md` | 新增 | 图文互斥正负例（与 guard-llama-guard 的表互链） | L2 |
 | `templates/report-section.md` | 新增 | 图像章节占位符（含 Metric Caveats） | L2 |
-| `root/M1_待甲确认.md` | 追加 #5 | 图像路径契约补充（默认接受制 48h） | L0 |
+| `root/待甲确认.md` | 追加 #5 | 图像路径契约补充（默认接受制 48h） | L0 |
 | `root/M3_summary.md` | 新增 | 追溯表 + N/A + 限制/偏差 + Backlog + Metric Caveats（交付件） | L0 |
 
 不动 `guard-llama-guard/` 任何已交付文件（同源文件如有缺陷需双侧修，走 Ask-first）。
@@ -169,7 +169,7 @@
 - [ ] 甲 UnsafeBench unified（checker exit 0）后：200–500 张矩阵 + E2E 截图；未到 → 合成+M0 样本矩阵 + "提交前重跑"标记；结果档状态按 §6-H 状态机如实标注
 
 **H. 文档与交付**
-- [ ] M0 #5 路径契约已追加 `M1_待甲确认.md`（默认接受制）；`references/` 各 notes 就位；key/token/权重/真实图像 `git grep` + 目录自查零泄漏
+- [ ] M0 #5 路径契约已追加 `待甲确认.md`（默认接受制）；`references/` 各 notes 就位；key/token/权重/真实图像 `git grep` + 目录自查零泄漏
 - [ ] `root/M3_summary.md`：追溯表 + N/A + 限制/偏差 + Metric Caveats（小样本不作强结论；量化口径注记；**caption-rule 仅为 pipeline 基线**不入主叙事；taxonomy 粗细不对称说明）+ **结果档状态机**（四态取一，不得声称高于实际档位）：`full_shieldgemma2`（真数据 200–500 全跑）/ `partial_shieldgemma2_n`（真数据子集 n 张，标注 n）/ `baseline_only`（仅 caption-rule 出数）/ `fallback_only`（仅顶替数据）
 
 ---

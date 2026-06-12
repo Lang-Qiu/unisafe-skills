@@ -88,7 +88,7 @@ This is the degradation path of the exit-code contract working as specified
   across batch sizes is not a realistic invariant; verdict-level equality is.
 - First two-guard metrics matrix produced on the fallback dataset
   (examples + tests/fixtures concatenated, 10 eligible; teammate data pending
-  — substitution recorded per M1_待甲确认 #2 default).
+  — substitution recorded per 待甲确认 #2 default).
 
 ## Other decisions
 

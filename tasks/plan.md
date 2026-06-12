@@ -149,7 +149,7 @@ M1 阶段只需要在接口、文件结构、metrics 字段和 M1_summary.md 中
 - [x] 任务 1–4 产物存在且全部可解析（json.tool exit 0；6 条样例逐行 json.loads 通过；jsonschema 实测：M0 4 条样本全 VALID，缺 id/字符串 is_unsafe/孤儿 error/反向孤儿全 REJECTED）
 - [x] `category_mapping.json` ↔ M0 §4 人工 diff 一致（S1–S14 14 键、OpenAI 13 键、S6 双映射、other/general_harm 双兜底）；schema 22 类枚举与之同源（程序断言通过）
 - [x] io-contract 内的 exit 表与本计划全局 contract 一致（含判例与 Plus 隔离原则）
-- [x] 甲侧事项已推送（`root/M1_待甲确认.md`，commit 7c7450e ✅）
+- [x] 甲侧事项已推送（`root/待甲确认.md`，commit 7c7450e ✅）
 - **失败处理**：契约有分歧 → 当天与甲对齐再动代码；自审不过 → 修复后再进 P1
 
 ---
@@ -486,5 +486,5 @@ M1 阶段只需要在接口、文件结构、metrics 字段和 M1_summary.md 中
 
 ## Open Questions
 
-- 无阻塞项。甲侧 4 项按 `root/M1_待甲确认.md` 默认接受制运行（#1 否决窗口、#2 默认顶替、#3 绑任务 16、#4 绑 C2/交付后审阅）。
+- 无阻塞项。甲侧 4 项按 `root/待甲确认.md` 默认接受制运行（#1 否决窗口、#2 默认顶替、#3 绑任务 16、#4 绑 C2/交付后审阅）。
 - 与 spec 的 5 处差异已登记（Architecture Decisions 末条），C3 时统一决定是否回写 spec。

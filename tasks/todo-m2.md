@@ -11,7 +11,7 @@
 - [x] 任务 1：`references/metrics-definitions.md` v2 增补段（S · 依赖无）——§9–§12 落库，v1 零改动（62d651f）
 - [x] 任务 2：category/adversarial/probe fixtures + 答案钥文件 `tests/fixtures/category_expected.json`（M · 依赖 1）——13 条覆盖矩阵全项；答案钥两路独立核算一致（4ff9412）；f1 完全漏检极限规则补进 §9
 
-### ☑ Checkpoint C0：✅（2026-06-11）v2 定义自审过 + `category_expected.json` 定稿 + `M1_待甲确认.md` #4 已追加 v2 一行（AD-1/R1 默认接受制生效）
+### ☑ Checkpoint C0：✅（2026-06-11）v2 定义自审过 + `category_expected.json` 定稿 + `待甲确认.md` #4 已追加 v2 一行（AD-1/R1 默认接受制生效）
 
 ## Phase 1 · Core-Minimal（C0 后；零第三方依赖；M2 唯一硬门）
 

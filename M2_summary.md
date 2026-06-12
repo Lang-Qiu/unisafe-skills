@@ -15,7 +15,7 @@
 | E llm-judge | 适配器 + 隔离 + live | `scripts/guards/llm_judge.py` | 19 离线测试（transport mock）+ live 18/18 + 样本 5/5 非 error + validate PASS + exit 1/2 判例实证 + git grep key/URL 零命中 | ✅ |
 | F 顺延项清算 | 消融 A–D、trigger eval | `references/ablations.md` 回填 | A/B/D 实测 + C 双源实测；trigger eval 实测档 N/A（需人工新会话 + 甲 #3，见 §3） | ✅/N-A |
 | G 全量结果档 | 1,725 三 Guard 矩阵 | — | 甲数据未到 → 顶替矩阵已出（`out_m2_threeguard/`，可截图），按"提交前重跑"标记；judge 档允许 partial | 待数据 |
-| H 文档与交付 | SKILL.md ≤250 行、v2 发甲、本文件 | `SKILL.md`（~168 行）、`M1_待甲确认.md` #4 追加行 | 指针全验证；本文件含 Metric Caveats | ✅ |
+| H 文档与交付 | SKILL.md ≤250 行、v2 发甲、本文件 | `SKILL.md`（~168 行）、`待甲确认.md` #4 追加行 | 指针全验证；本文件含 Metric Caveats | ✅ |
 
 ## 2. 三 Guard 对比矩阵（顶替数据 10 eligible，head_binary，baseline=rule）
 

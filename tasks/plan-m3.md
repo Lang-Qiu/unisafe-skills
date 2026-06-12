@@ -46,10 +46,10 @@
 ## Phase 0 · 前置（≈半天；两路并行、互不阻塞）
 
 ### 任务 1：M0 #5 图像路径契约草拟 + 发甲（S）
-- **描述**：在 `root/M1_待甲确认.md` 追加 **#5**（默认接受制 48h）：① `content.images[].path` 相对路径以 unified JSONL 所在目录为基准（绝对路径原样用）；② eligible 方案 B（path 或 url 至少一个非空；均空才 missing_content）；③ url-only → 乙侧记录级 error `image_url_not_supported`（M3 不下载）；④ 缺图/坏图 → error 行可见化（`image_not_found`/`image_decode_error`），不静默跳过；⑤ 多图评首图 + 三落点 warning。同步更新文末时间窗表。推送即启动否决窗口。
+- **描述**：在 `root/待甲确认.md` 追加 **#5**（默认接受制 48h）：① `content.images[].path` 相对路径以 unified JSONL 所在目录为基准（绝对路径原样用）；② eligible 方案 B（path 或 url 至少一个非空；均空才 missing_content）；③ url-only → 乙侧记录级 error `image_url_not_supported`（M3 不下载）；④ 缺图/坏图 → error 行可见化（`image_not_found`/`image_decode_error`），不静默跳过；⑤ 多图评首图 + 三落点 warning。同步更新文末时间窗表。推送即启动否决窗口。
 - **验收**：#5 含上述五要点 + 影响面说明（只增不改，甲侧唯一动作=按 ① 摆放图片目录）+ 时间窗行。
 - **验证**：人工对照 spec §4.1/§4.2/§0-9 逐项勾；git push 成功。
-- **依赖**：无。**文件**：`root/M1_待甲确认.md`。
+- **依赖**：无。**文件**：`root/待甲确认.md`。
 
 ### 任务 2：gated 许可确认 + 权重可达性探查（S；**用户协助项**）
 - **描述**：用户在 HF 页面确认/点击 `google/shieldgemma-2-4b-it` 许可（乙不可代点；Google 许可通常即时通过）；乙侧探查：带 token 的 `model_info` 探针确认 gated 状态与可下载性；镜像路线核查（`HF_ENDPOINT` 镜像对 gated 模型需 token 的行为、是否存在可用非官方镜像——M1 alpindale 先例）。产出：`--model-id` 默认值的最终确认 + guard 级失败 `FIX:` 文案素材（许可未点/无 token/网络三种）。

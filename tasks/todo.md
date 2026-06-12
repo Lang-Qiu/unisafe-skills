@@ -31,7 +31,7 @@
 - [x] 任务 12：gated/GPU 联调 + 降级实测（§9-J/N）（S · 依赖 11）——GPU bf16 batch=4 约 0.2s/条；`--device cpu --limit 5` 24.7s 判定与 GPU 一致；降级三判例实测（缺依赖→2/单独→1/真 403→2+FIX+rule 完好）
 - [x] 任务 13：第一版指标 `--limit 200` + E2E 截图（有 fallback 链）（S · 依赖 12；甲数据可选）——两 guard×4 桶×双口径矩阵 ✅；AUROC 仅 llama-guard（head 1.0）；**甲数据未到，examples+fixtures 顶替（10 eligible），按 #2 默认如实记录，提交前重截**；E2E 截图已存档 ✅（2026-06-11）
 
-### ☑ Checkpoint C2：✅ 已达（2026-06-11，镜像权重+顶替数据，均如实记录）——§9-J 全勾；metrics 矩阵存在；E2E 截图已存档 ✅；#4 已发甲（`M1_待甲确认.md`），等签字
+### ☑ Checkpoint C2：✅ 已达（2026-06-11，镜像权重+顶替数据，均如实记录）——§9-J 全勾；metrics 矩阵存在；E2E 截图已存档 ✅；#4 已发甲（`待甲确认.md`），等签字
 
 ## Phase 3 · Plus（C1 后并行；可整体顺延 M2）
 

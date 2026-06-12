@@ -23,7 +23,7 @@
 - **AD-5 fixtures 用两个合成 guard**（`fixture-guard-a` 带 confidence、`fixture-guard-b` 仿 rule 无 confidence），不依赖任何真实 guard——comparison 的 Δ 列、AUROC null 注记、`--baseline` 切换全部离线可测。二者**仅作为 fixtures 数据中的 `guard.name` 值存在，不注册进 `guards/__init__.py`、不可被 `main.py` 调用**，只服务 metrics 测试。
 - **AD-6 P1 内部执行序（串行落盘）**：任务 3/4/5 逻辑独立但同改 `scripts/metrics.py` 与 `tests/test_metrics.py`，**实现与提交顺序固定为 3 → 4 → 5**（禁止多 agent 并发落盘同一文件）；comparison 渲染（任务 5）先于 over-refusal 正式化（任务 6）——探针桶"进对比透视"依赖 comparison 骨架存在。spec DAG 画作并行，此为编排细化。
 - **AD-7 judge 纯 stdlib urllib**（spec §5 已定）：`requirements*.txt` 零改动；live 测试与 openai 适配器同模式（`mock.patch.dict` 离线 + opt-in 环境变量）。
-- **AD-8 metrics-definitions v2 发甲方式**：在 `root/M1_待甲确认.md` #4 条目追加一行"v2 增补段已就绪，并入同一 review"，不新开确认文件（spec §6-H"并入 #4 review 线程"的最小实现）。
+- **AD-8 metrics-definitions v2 发甲方式**：在 `root/待甲确认.md` #4 条目追加一行"v2 增补段已就绪，并入同一 review"，不新开确认文件（spec §6-H"并入 #4 review 线程"的最小实现）。
 
 ## 与 spec / 现状的冲突与解释登记（只登记，不改 spec）
 
@@ -56,7 +56,7 @@
 - **依赖**：任务 1。**文件**：`tests/fixtures/category_dataset.jsonl`、`tests/fixtures/category_predictions.jsonl`、`tests/fixtures/category_expected.json`（本阶段不建测试文件）。
 
 ### ☑ Checkpoint C0
-- **成功条件**：v2 定义自审通过；`tests/fixtures/category_expected.json` 定稿；`M1_待甲确认.md` #4 已追加 v2 一行（AD-8）。（AD-1/R1 走默认接受制，**不设人工阻塞**；用户反对再调整 comparison 输出策略。）
+- **成功条件**：v2 定义自审通过；`tests/fixtures/category_expected.json` 定稿；`待甲确认.md` #4 已追加 v2 一行（AD-8）。（AD-1/R1 走默认接受制，**不设人工阻塞**；用户反对再调整 comparison 输出策略。）
 - **失败处理**：定义有分歧 → 修订任务 1 后再进 P1（接口先行）。
 
 ---
@@ -170,7 +170,7 @@
 - **依赖**：C1。**文件**：`templates/report-section.md`。
 
 ### 任务 18：全量 1,725 条结果档（S 执行 + 等待；数据依赖）
-- **描述**：甲数据 checker exit 0 后：三 guard（或可用集）全量 + 双旗标 + comparison → 真实指标矩阵 + E2E 截图；judge 段用 `--resume` 分段跑（R7，可能耗时数小时）；**partial 全量规则**：若 rule/llama 全量完成而 judge 未完成，结果档与 `root/M2_summary.md` 必须标记 **partial（两 Guard 全量 + judge 部分/缺席）**，不得声称三 Guard 全量完成；`M1_待甲确认.md` #2 状态同步。
+- **描述**：甲数据 checker exit 0 后：三 guard（或可用集）全量 + 双旗标 + comparison → 真实指标矩阵 + E2E 截图；judge 段用 `--resume` 分段跑（R7，可能耗时数小时）；**partial 全量规则**：若 rule/llama 全量完成而 judge 未完成，结果档与 `root/M2_summary.md` 必须标记 **partial（两 Guard 全量 + judge 部分/缺席）**，不得声称三 Guard 全量完成；`待甲确认.md` #2 状态同步。
 - **验收**：spec §6-G 勾或按 M1 #2 模式标"顶替+提交前重跑"；partial 时 M2_summary 标记如实。
 - **验证**：run_metadata 守恒式 + validate PASS + metrics RESULT 行。
 - **依赖**：C1 + C2（judge 行可选）+ **甲 #2 数据**。**文件**：`out_*`（gitignored）+ 截图归档。
@@ -186,10 +186,10 @@
 - **依赖**：C1（内容随 C2/P3 实际达成情况回填，N/A 项如实标注）。**文件**：`SKILL.md`、`references/io-contract.md`、`README.md`。
 
 ### 任务 20：`root/M2_summary.md` + 验收 sweep + push（S）
-- **描述**：追溯表（M2 范围 × 层级 × 文件 × 测试 × spec §6 验收项）、N/A 表（候选：judge live 若端点故障、消融逐项、trigger eval、全量档）、已知限制、Extension Backlog（L3 五行 + R7 并发优化）、**Metric Caveats 四条**（by-category 仅 answered_only；judge confidence 非校准；low_support 不作强结论；fallback 数据不可作最终结果）；spec §6 全清单 sweep；`M1_待甲确认.md` 相关条目状态同步；push。
+- **描述**：追溯表（M2 范围 × 层级 × 文件 × 测试 × spec §6 验收项）、N/A 表（候选：judge live 若端点故障、消融逐项、trigger eval、全量档）、已知限制、Extension Backlog（L3 五行 + R7 并发优化）、**Metric Caveats 四条**（by-category 仅 answered_only；judge confidence 非校准；low_support 不作强结论；fallback 数据不可作最终结果）；spec §6 全清单 sweep；`待甲确认.md` 相关条目状态同步；push。
 - **验收**：spec §6-H 第二勾；§6 各项勾或 N/A 无遗漏。
 - **验证**：对照 spec §6 逐字母核对；git push 成功。
-- **依赖**：任务 19；吸收 8–18 实际状态。**文件**：`root/M2_summary.md`、`root/M1_待甲确认.md`。
+- **依赖**：任务 19；吸收 8–18 实际状态。**文件**：`root/M2_summary.md`、`root/待甲确认.md`。
 
 ### ☑ Checkpoint C3 = M2 技术交付
 - **成功条件**：spec §6-H 全勾；A/B/C/D/O 全勾（C1 已保证）；E/F/G 各项勾或 N/A+原因+顺延。

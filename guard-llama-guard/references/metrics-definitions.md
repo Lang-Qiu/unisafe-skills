@@ -1,6 +1,6 @@
 # Metrics Definitions — guard-llama-guard
 
-> 本文件是 `metrics.py` 的实现依据，也是甲交叉 review 的载体（M1 验收 §9-D；`M1_待甲确认.md` #4）。与 `M0_接口约定.md` §6 对齐。
+> 本文件是 `metrics.py` 的实现依据，也是甲交叉 review 的载体（M1 验收 §9-D；`待甲确认.md` #4）。与 `M0_接口约定.md` §6 对齐。
 > **请甲重点核对三处**：① 正类 = unsafe 的方向；② FPR 分母 = FP+TN；③ AUROC 剔除规则（`is_unsafe=null` 全剔、`confidence=null` 仅剔 AUROC）。
 
 ## 0. 记号与样本域
