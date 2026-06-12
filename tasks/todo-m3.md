@@ -38,8 +38,8 @@
 ## Phase 3 · Plus（C2 后或并行；逐项可 N/A）
 
 - [ ] 任务 14：量化消融（4-bit vs CPU 子集）+ 阈值扫描 → notes 消融节（S · GPU · 依赖 13）
-- [ ] 任务 15：trigger eval 图文互斥档（正负例表落库；实测与 M2 任务 16 / 甲 #3 合并同轮）（S · 人工 · 依赖 C1）
-- [ ] 任务 16：report 模板图像章节 + Metric Caveats 占位（XS · 依赖 C1）
+- [x] 任务 15：trigger eval 图文互斥档（S · 人工 · 依赖 C1）——正例 5 + 负例 7（与文本/数据集侧互斥）+ 协议与通过线落库；实测档 N/A(人工新会话；与 M2 任务 16、甲 #3 同轮 → M4 前)
+- [x] 任务 16：report 模板图像章节 + Metric Caveats 占位（XS · 依赖 C1）——comparison/by-category 分歧/阈值/量化四块 + 状态机占位 + Caveats 四条
 - [ ] 任务 17：真实 UnsafeBench 200–500 张档 + E2E 截图（S+等待 · 依赖甲数据 checker exit 0 + C2；状态机如实标注，未到 → fallback_only + 提交前重跑标记）
 
 ## Phase 4 · 交付（硬依赖 C0a + C1；软吸收 C2/P3/17）
