@@ -24,9 +24,9 @@
 - [x] 任务 8：缺图/异常四 error 用例 + exit 判例 + resume 测试（S · 依赖 7；提交序在 7 后）——四 error 名逐字断言；多图三落点 + 无多图时无 warnings 键；resume hits=8/misses=0；exit 1/2/1 判例；43 测试绿
 - [x] 任务 9：validate.py 受控复制（逻辑零行修改实证，仅头注）+ 附加字段不被拒断言（S · 依赖 7）——实跑输出 --against+--metadata PASS；warnings 字段过 check_record；dup/coverage/结构违规 FAIL 链路全锁；52 测试绿
 - [x] 任务 10：metrics.py 受控复制 + AD-2 薄层 + fixtures 答案钥 `image_expected.json`（两路核算一致后锁定，一次性脚本已删）+ 测试（M · 依赖 5；提交序在 9 后）——metrics @e5b2f70 薄层三项头注枚举；文本桶缺席/对抗全 unknown/纯 FP 类别出 macro/Δ 分叉全锁；64 测试绿
-- [ ] 任务 11：黄金样例三件 + `test_core_isolation`（sys.modules 断言）+ SKILL.md 重写（≤250 行，清 feat 分支注记）+ README（M · 依赖 7–10）
+- [x] 任务 11：黄金样例三件（metrics.sample.json 精确锁 + output.sample 文档样例）+ `test_core_isolation`（链路进程内三步 + sys.modules 断言）+ SKILL.md 重写（103 行，feat 注记清除）+ README + `references/io-contract.md` 图像版起草 + requirements-shieldgemma.txt（提前自任务 12，供指针有效）（M · 依赖 7–10）——67 测试绿
 
-### ☐ Checkpoint C1：spec §6-A/B/C 全勾；unittest 全绿且核心链路不 import torch/transformers/PIL/bitsandbytes；CLI 全链路 exit 0
+### ☑ Checkpoint C1：✅（2026-06-12）spec §6-A/C 全勾 + §6-B 离线全勾（shieldgemma2 exit 判例归任务 12 补全）；67 测试全绿且核心链路零重模块 import（test_core_isolation 为证）；examples CLI 三步链路 exit 0
 
 ## Phase 2 · Core-Full：ShieldGemma 2（C0b 后；提交在 C1 后；软门）
 

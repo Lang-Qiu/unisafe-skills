@@ -1,16 +1,45 @@
 # guard-shieldgemma2
 
-Guard Skill（方向 B，多模态亮点）。在统一 image_safety JSONL 上运行图像 Guard 并输出统一判断 + 指标。
+Course project (UniSafe Skills, direction B, M3 multimodal highlight): run image
+safety guards over unified `image_safety` JSONL and score them. Model entry
+point for agents is [`SKILL.md`](SKILL.md); this README is for humans.
 
-**状态**：scaffold（M0）。实现见 M3，分支 `feat/guard-shieldgemma2`。
+## What it wraps
 
-- Guard：[ShieldGemma 2-4B](https://huggingface.co/google/shieldgemma-2-4b-it)（本地，gated，3 策略：性/暴力血腥/危险内容）+ OpenAI omni-moderation（图像，API 交叉验证）。
-- 指标：Accuracy / Macro-F1 / Recall / FPR（含 Safe 样本）。
-- 与文本 Guard **完全相同**的统一输出 schema → 证明接口跨模态零改动。
-- 接口/映射/指标：见 [`../M0_接口约定.md`](../M0_接口约定.md) §4、§5、§6。
+| guard | type | layer | source |
+|---|---|---|---|
+| `caption-rule` | keyword baseline on image caption/OCR text (stdlib, deterministic; **pipeline baseline**, never reads pixels) | Core-Minimal | [`assets/caption_keywords.json`](assets/caption_keywords.json) |
+| `shieldgemma2` | ShieldGemma 2 4B image classifier, local 4-bit inference, 3 policies → per-policy yes-probability | Core-Full (M3 Phase 2) | [model card](https://huggingface.co/google/shieldgemma-2-4b-it) (gated; mirror via `--model-id`) |
 
-## 待办（M3）
+Same unified guard-result schema and metric definitions as
+[`guard-llama-guard`](../guard-llama-guard/) — the Guard interface generalizes
+from text to image with zero schema change.
 
-- [ ] ShieldGemma 2 逐策略推理；per-policy 概率 → `confidence`
-- [ ] OpenAI omni 图像交叉验证
-- [ ] 3 策略 → 22 类映射；小样本（200–500 张）
+## Reproduce in three steps (zero install, no GPU)
+
+```bash
+cd guard-shieldgemma2
+python scripts/main.py --input examples/input.sample.jsonl --output-dir out_smoke --guards caption-rule
+python scripts/validate.py out_smoke/predictions --against examples/input.sample.jsonl
+python scripts/metrics.py --predictions out_smoke/predictions --dataset examples/input.sample.jsonl --output-dir out_smoke/metrics
+```
+
+Expected: `RESULT: ok predicted=3 errors=3 skipped=1` (3 errors are deliberate
+demo rows: url-only / missing file / missing caption), then `RESULT: PASS`,
+then a metrics table in `out_smoke/metrics/metrics.md`. Tests:
+`python -m unittest discover -s tests` (stdlib only, no network/GPU; ShieldGemma
+live tests are opt-in via `SHIELDGEMMA2_LIVE=1`).
+
+For the ShieldGemma 2 path: `pip install -r requirements-shieldgemma.txt`,
+accept the license on the HF page (`hf auth login`), then add
+`--guards caption-rule,shieldgemma2`. 8GB-VRAM machines use the default
+4-bit NF4 load.
+
+## Contracts
+
+- I/O contract (image edition) + exit codes: [`references/io-contract.md`](references/io-contract.md)
+- Output record schema (byte-identical with guard-llama-guard, test-locked): [`schemas/guard_output.schema.json`](schemas/guard_output.schema.json)
+- Category mapping (3 policies → 22 canonical, = M0 §4): [`references/category_mapping.json`](references/category_mapping.json)
+- Metric formulas: inherited verbatim from [`../guard-llama-guard/references/metrics-definitions.md`](../guard-llama-guard/references/metrics-definitions.md) (v1+v2, zero new formulas)
+- Synthetic example/fixture images: regenerate via `python scripts/make_synth_images.py` (deterministic, <1KB each, benign by construction)
+- Team-level contract: [`../M0_接口约定.md`](../M0_接口约定.md), spec [`../M3_SPEC.md`](../M3_SPEC.md)

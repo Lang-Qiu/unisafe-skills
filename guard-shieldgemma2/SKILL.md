@@ -1,31 +1,130 @@
 ---
 name: guard-shieldgemma2
-description: Run image safety guards over unified image_safety JSONL and emit unified guard-result records. Wraps ShieldGemma 2 (local, sexually-explicit / violence-gore / dangerous-content policies) with OpenAI omni-moderation as an API cross-check, then computes Accuracy, Macro-F1, Recall, and FPR on image data. Use this skill to evaluate image guards on a unified dataset.
+description: Run image safety guards over unified image_safety JSONL and score them. Wraps ShieldGemma 2 (google/shieldgemma-2-4b-it, local 4-bit, 3 policies) plus a zero-dependency caption/OCR keyword baseline, emits the same unified guard-result schema as the text guards, and computes Accuracy/Macro-F1/Recall/FPR/AUROC with dual error basis. Use this skill to evaluate IMAGE safety guards (UnsafeBench-style data, image moderation, ShieldGemma). Do NOT use it for text prompt/response safety (that is guard-llama-guard) or for downloading/converting datasets (those are the dataset-* skills).
 ---
 
-# Guard: ShieldGemma 2 (multimodal highlight)
+# guard-shieldgemma2 — image safety guards on unified JSONL
 
-> Status: **scaffold (M0)**. Implementation lands in **M3** on branch `feat/guard-shieldgemma2`.
+Same Guard interface as `guard-llama-guard`, generalized to images with zero
+schema change: identical output records, identical metrics machine, identical
+exit-code contract.
 
-Reads unified `image_safety` records (e.g. `dataset-unsafebench` output), runs ShieldGemma 2
-(`google/shieldgemma-2-4b-it`, gated) per-policy, optionally cross-checks with OpenAI
-omni-moderation (image input), and emits the same unified guard-result schema as the text guards
-— demonstrating the Guard interface generalizes across modality with no interface change.
+## When to use / when NOT to use
 
-## Planned structure (standard skill layout; only SKILL.md required)
+- **Use**: running an image guard (ShieldGemma 2 or the caption-rule baseline)
+  over unified `image_safety` records; computing image-guard metrics; comparing
+  image guards.
+- **Do NOT use**: text prompt/response safety (→ `guard-llama-guard`); dataset
+  download/conversion/format-checking (→ `dataset-*` skills); judging images
+  by URL (this skill never downloads — url-only records become error rows).
+
+## Quickstart (zero install, no GPU)
+
+```bash
+cd guard-shieldgemma2
+python scripts/main.py --input examples/input.sample.jsonl --output-dir out_smoke --guards caption-rule
+python scripts/validate.py out_smoke/predictions --against examples/input.sample.jsonl
+python scripts/metrics.py --predictions out_smoke/predictions --dataset examples/input.sample.jsonl --output-dir out_smoke/metrics
+```
+
+Expected: `RESULT: ok predicted=3 errors=3 skipped=1`, then `RESULT: PASS`,
+then `RESULT: ok guards=1 joined=6`. The 3 errors are deliberate demo rows
+(url-only / missing file / missing caption — see Failure handling).
+
+## Guards
+
+| guard | layer | needs | notes |
+|---|---|---|---|
+| `caption-rule` | Core-Minimal | nothing (stdlib) | keyword match on the first image's caption/ocr TEXT; never reads pixels; **pipeline baseline only** — label it as such in any report |
+| `shieldgemma2` | Core-Full | GPU + `pip install -r requirements-shieldgemma.txt` + model weights | ShieldGemma 2 4B, 4-bit NF4 by default (8GB-VRAM budget); 3 built-in policies → per-policy yes-probability; `confidence = max(yes_p)` |
+
+ShieldGemma 2 weights: the official `google/shieldgemma-2-4b-it` is gated
+(license click + `hf auth login`). A community mirror can be substituted via
+`--model-id` (see `references/shieldgemma2-notes.md` once live results land).
+
+## Input
+
+Unified JSONL (dataset-format-checker PASS). Eligible = `task_type ==
+"image_safety"` AND `modality == ["image"]` AND first image has `path` **or**
+`url`. Relative `path` resolves against the **JSONL file's own directory**
+(待甲确认.md #5). Anything else: wrong task/modality → out-of-scope skip;
+no path and no url → missing-content skip. Multi-image records: first image
+only + warnings (`run_metadata.warnings.multi_image_records`,
+`prediction.warnings: ["multi_image_first_only"]`, `raw_output.image_index: 0`).
+
+## Output
 
 ```
-guard-shieldgemma2/
-  SKILL.md  README.md  requirements.txt
-  scripts/ (main.py guards/ metrics.py)
-  references/category_mapping.json   # 3 ShieldGemma policies -> 22 canonical
-  schemas/guard_output.schema.json   # shared with guard-llama-guard
-  examples/ (input.sample.jsonl output.sample.jsonl)
-  tests/ (test_validate.py fixtures/)
+<output_dir>/
+├── predictions/<guard>.predictions.jsonl   # one row per eligible record (conservation law)
+├── metrics/metrics.{json,md}
+└── run_metadata.json
 ```
 
-## Contract
+Row schema = `schemas/guard_output.schema.json` (byte-identical with
+guard-llama-guard; shared M0 §5 contract). Full I/O details:
+`references/io-contract.md`.
 
-Same unified guard-result schema and metric definitions as `guard-llama-guard`; see
-[`../M0_接口约定.md`](../M0_接口约定.md) §4, §5, §6. Per-policy probabilities feed `confidence`.
-Keep the evaluation sample small (200–500 images).
+## Execution steps
+
+1. Route records (eligible / out_of_scope / missing_content) and pre-check
+   images once (resolve path → exists → magic bytes).
+2. Run requested guards (`--guards caption-rule,shieldgemma2`); pre-check
+   failures become guard-independent error rows, no model call.
+3. `validate.py <out>/predictions --against <input>` → `RESULT: PASS`.
+4. `metrics.py` → metrics.json/md. Optional flags: `--by-category`
+   (per-category recall/precision/F1 + taxonomy divergence, answered_only),
+   `--adversarial-split` (tri-state; image data usually lands entirely in
+   `unknown` — that is honest counting, not a bug), `--baseline <guard>`
+   (comparison deltas when ≥2 guards are joined; default `caption-rule`).
+5. Judge by **exit code + `RESULT:` line**; never pipe through `tail`.
+
+Key options: `--threshold` (shieldgemma2 unsafe cut on max yes-probability,
+default 0.5 = model-card default, not calibrated); `--timeout-s` (default:
+shieldgemma2 120s); `--device cuda|cpu`; `--limit N`; `--resume`.
+
+## Failure handling
+
+Exit codes: `0` all guards ok · `1` fatal / ALL guards failed · `2` partial
+(≥1 ok, ≥1 guard-level failure). Record-level errors (row written,
+`is_unsafe=null`, counted in dual-basis metrics):
+
+| error prefix | meaning |
+|---|---|
+| `image_url_not_supported` | first image has url only; this skill never downloads |
+| `image_not_found` | resolved path does not exist |
+| `image_decode_error` | not a recognizable raster file (stdlib magic bytes; pixel-level failures from the adapter reuse the same name) |
+| `missing_caption_ocr` | caption-rule only: no caption/ocr text — never silently judged safe |
+
+## Sanity check
+
+| command | expected |
+|---|---|
+| quickstart step 1 | `RESULT: ok predicted=3 errors=3 skipped=1`, exit 0 |
+| quickstart step 2 | `RESULT: PASS files=1 records=6`, exit 0 |
+| quickstart step 3 | `RESULT: ok guards=1 joined=6`; metrics.md shows head_binary ao accuracy 1.0 / fw accuracy 0.5 |
+| `python -m unittest discover -s tests` | all green, stdlib only, no GPU/network (live tests are opt-in `SHIELDGEMMA2_LIVE=1`) |
+| `--guards shieldgemma2` without deps/weights | guard-level failure + `FIX:` hint; alone → exit 1, with caption-rule → exit 2 |
+
+## Troubleshooting
+
+| symptom | cause / fix |
+|---|---|
+| `GUARD-FAILURE [shieldgemma2]: missing/broken dependency` | `pip install -r requirements-shieldgemma.txt` (transformers ≥4.50 needed for the ShieldGemma2 class) |
+| gated 401/403 on model load | accept the license on the HF model page, `hf auth login`, or pass a mirror via `--model-id` |
+| CUDA OOM at load | keep the default 4-bit path; close other GPU apps; fall back to `--device cpu` (slow but fine for ≤500 images) |
+| many `missing_caption_ocr` errors | your dataset has no caption/ocr text — caption-rule cannot judge it; use shieldgemma2 |
+| soft timeouts on a busy GPU | raise `--timeout-s` (CUDA steps cannot be interrupted; result is discarded on timeout) |
+
+## Safety & limitations
+
+- caption-rule is a **text-surrogate pipeline baseline** — never present its
+  numbers as an image model's; tables must carry the guard name.
+- 4-bit quantization perturbs per-policy probabilities (confidence source);
+  the quantization basis is recorded with every result; threshold 0.5 is the
+  model-card default, **not calibrated** on the evaluation dataset (AUROC is
+  threshold-free; Acc/FPR are not).
+- Example/fixture images are tiny synthetic PNGs generated by
+  `scripts/make_synth_images.py` — benign by construction; real evaluation
+  imagery never enters this repository.
+- This skill is read-only on inputs and never fetches remote images.
