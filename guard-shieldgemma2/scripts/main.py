@@ -77,7 +77,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--device", default="auto", choices=("auto", "cuda", "cpu"))
     parser.add_argument("--timeout-s", type=float, default=None,
                         help="soft per-record timeout; per-guard default when omitted: "
-                             "shieldgemma2 120s (4-bit vision inference is slower than "
+                             "shieldgemma2 120s (int8 vision inference is slower than "
                              "text; CUDA steps cannot be interrupted mid-step)")
     parser.add_argument("--retries", type=int, default=1)
     parser.add_argument("--batch-size", type=int, default=8)

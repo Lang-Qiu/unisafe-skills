@@ -50,6 +50,8 @@
 
 与 guard-llama-guard 同构（M1 io-contract §6），增量字段：`config.threshold`（shieldgemma2 判限回显）；`config.timeout_s_effective`（shieldgemma2 默认 120s）；`warnings.multi_image_records` 与 `warnings.unknown_policy_count`（仅非空时出现）。
 
+`unknown_policy_count` 语义（名字级审计）：**本次运行见到的、映射表外的策略名去重计数**——与阈值无关、与出现次数无关（未知名是模型属性而非记录属性）；每行的原始 per-policy 分数始终留在 `raw_output.policy_scores`，未知名不参与 `risk_categories` 映射（不私自猜测，M3_SPEC §5）。
+
 ## 6. Exit Code Contract
 
 与 guard-llama-guard `references/io-contract.md` §7 **一字不差**（全局权威副本在彼处）。本 skill 判例：

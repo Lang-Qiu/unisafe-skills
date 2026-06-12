@@ -24,7 +24,7 @@
 - [x] 任务 8：缺图/异常四 error 用例 + exit 判例 + resume 测试（S · 依赖 7；提交序在 7 后）——四 error 名逐字断言；多图三落点 + 无多图时无 warnings 键；resume hits=8/misses=0；exit 1/2/1 判例；43 测试绿
 - [x] 任务 9：validate.py 受控复制（逻辑零行修改实证，仅头注）+ 附加字段不被拒断言（S · 依赖 7）——实跑输出 --against+--metadata PASS；warnings 字段过 check_record；dup/coverage/结构违规 FAIL 链路全锁；52 测试绿
 - [x] 任务 10：metrics.py 受控复制 + AD-2 薄层 + fixtures 答案钥 `image_expected.json`（两路核算一致后锁定，一次性脚本已删）+ 测试（M · 依赖 5；提交序在 9 后）——metrics @e5b2f70 薄层三项头注枚举；文本桶缺席/对抗全 unknown/纯 FP 类别出 macro/Δ 分叉全锁；64 测试绿
-- [x] 任务 11：黄金样例三件（metrics.sample.json 精确锁 + output.sample 文档样例）+ `test_core_isolation`（链路进程内三步 + sys.modules 断言）+ SKILL.md 重写（103 行，feat 注记清除）+ README + `references/io-contract.md` 图像版起草 + requirements-shieldgemma.txt（提前自任务 12，供指针有效）（M · 依赖 7–10）——67 测试绿
+- [x] 任务 11：黄金样例三件（metrics.sample.json 精确锁 + output.sample 文档样例）+ `test_core_isolation`（链路进程内三步 + sys.modules 断言）+ SKILL.md 重写（133 行，feat 注记清除）+ README + `references/io-contract.md` 图像版起草 + requirements-shieldgemma.txt（提前自任务 12，供指针有效）（M · 依赖 7–10）——67 测试绿
 
 ### ☑ Checkpoint C1：✅（2026-06-12）spec §6-A/C 全勾 + §6-B 离线全勾（shieldgemma2 exit 判例归任务 12 补全）；67 测试全绿且核心链路零重模块 import（test_core_isolation 为证）；examples CLI 三步链路 exit 0
 
@@ -44,6 +44,8 @@
 
 ## Phase 4 · 交付（硬依赖 C0a + C1；软吸收 C2/P3/17）
 
-- [x] 任务 18：文档终稿 sweep（SKILL 103 行指针全活；io-contract 定稿；notes 三段实测档）+ `root/M3_summary.md`（追溯表 + **状态机 fallback_only** + N/A 台账 + 八条 Caveats/偏差 + Backlog）+ spec §6 全量 sweep + 泄漏自查零命中 + push（M · 依赖 C1 + 11–17 终态）
+- [x] 任务 18：文档终稿 sweep（SKILL 133 行指针全活；io-contract 定稿；notes 三段实测档）+ `root/M3_summary.md`（追溯表 + **状态机 fallback_only** + N/A 台账 + 八条 Caveats/偏差 + Backlog）+ spec §6 全量 sweep + 泄漏自查零命中 + push（M · 依赖 C1 + 11–17 终态）
+
+- [x] review 修复（2026-06-13，C3 后五轴 review 的 3 条 Important）：I-1 test_validate 误植 walrus 清除；I-2 目录输入 + 解析基准测试锁（TestDirectoryInput）；I-3 `unknown_policy_count` 改**名字级去重审计**（property + 阈值无关；io-contract §5 文档化；landing 测试预期 5→1 + 低阈值审计新用例）——86 测试绿。S-1..S-5 登记不修（S-1/S-5 上游同款继承、S-2/S-3 影响面极小、S-4 留 M4 复现核对时一并）
 
 ### ☑ Checkpoint C3 = M3 技术交付：✅（2026-06-12）§6-A/B/C/D/H 全勾 + E 实质全勾；F = 量化/阈值消融全实测 + trigger eval N/A(人工同轮) + judge-vision N/A(探测定案)；G = 待甲数据（fallback_only 矩阵已出 + partial 规则就位）；M3_summary 完整。人工余项：M3 截图、甲 dataset-unsafebench/#5 窗口、官方许可申请、三方 trigger eval、用户终审

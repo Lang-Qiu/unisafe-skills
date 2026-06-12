@@ -14,6 +14,7 @@ import json
 import os
 import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -45,6 +46,20 @@ def _patched_guard(scored, threshold=None):
          mock.patch.object(ShieldGemma2Guard, "_forward_probs", lambda self, image: list(scored)):
         result = guard.predict(_record())
     return guard, result
+
+
+@contextlib.contextmanager
+def _fake_runtime_deps():
+    """Let available() reach the model-loading seam without real heavy deps."""
+    torch = types.ModuleType("torch")
+    torch.no_grad = object()
+    modules = {
+        "torch": torch,
+        "transformers": types.ModuleType("transformers"),
+        "PIL": types.ModuleType("PIL"),
+    }
+    with mock.patch.dict(sys.modules, modules):
+        yield
 
 
 class TestRegistryAndConfig(unittest.TestCase):
@@ -97,6 +112,13 @@ class TestVerdicts(unittest.TestCase):
         self.assertEqual(result["prediction"]["risk_categories"], ["general_harm"])
         self.assertEqual(guard.unknown_policy_count, 1)
 
+    def test_unknown_policy_audited_even_below_threshold(self):
+        # name-level audit is threshold-independent: an unknown name is a model
+        # property, not a verdict property
+        guard, result = _patched_guard([("alien_policy", 0.1), ("violence", 0.9)])
+        self.assertEqual(result["prediction"]["risk_categories"], ["violence"])
+        self.assertEqual(guard.unknown_policy_count, 1)
+
     def test_nan_probabilities_become_error_row(self):
         _, result = _patched_guard([("dangerous", float("nan")), ("violence", 0.1)])
         self.assertIsNone(result["prediction"]["is_unsafe"])
@@ -125,11 +147,13 @@ class TestAvailability(unittest.TestCase):
         with mock.patch("builtins.__import__", side_effect=no_torch):
             ok, reason = guard.available()
         self.assertFalse(ok)
-        self.assertIn("FIX: pip install -r requirements-shieldgemma.txt", reason)
+        self.assertIn("install the torch build", reason)
+        self.assertIn("requirements-shieldgemma.txt", reason)
 
     def test_gated_load_failure_names_the_license(self):
         guard = ShieldGemma2Guard({})
-        with mock.patch.object(ShieldGemma2Guard, "_ensure_loaded",
+        with _fake_runtime_deps(), \
+             mock.patch.object(ShieldGemma2Guard, "_ensure_loaded",
                                side_effect=OSError("401 Client Error: gated repo")):
             ok, reason = guard.available()
         self.assertFalse(ok)
@@ -137,7 +161,8 @@ class TestAvailability(unittest.TestCase):
 
     def test_generic_load_failure_reported(self):
         guard = ShieldGemma2Guard({})
-        with mock.patch.object(ShieldGemma2Guard, "_ensure_loaded",
+        with _fake_runtime_deps(), \
+             mock.patch.object(ShieldGemma2Guard, "_ensure_loaded",
                                side_effect=RuntimeError("CUDA out of memory")):
             ok, reason = guard.available()
         self.assertFalse(ok)
@@ -176,10 +201,10 @@ class TestUnknownPolicyWarningLanding(unittest.TestCase):
             out = Path(tmp) / "out"
 
             def fake_probs(self, image):
-                self.unknown_policy_count += 0  # counted in predict via mapping miss
                 return [("alien_policy", 0.9), ("violence", 0.1)]
 
-            with mock.patch.object(ShieldGemma2Guard, "_ensure_loaded", lambda self: None), \
+            with _fake_runtime_deps(), \
+                 mock.patch.object(ShieldGemma2Guard, "_ensure_loaded", lambda self: None), \
                  mock.patch.object(ShieldGemma2Guard, "_load_image", lambda self, r: object()), \
                  mock.patch.object(ShieldGemma2Guard, "_forward_probs", fake_probs), \
                  contextlib.redirect_stdout(io.StringIO()):
@@ -188,10 +213,9 @@ class TestUnknownPolicyWarningLanding(unittest.TestCase):
                     "--guards", "shieldgemma2"])
             self.assertEqual(code, 0)
             metadata = json.loads((out / "run_metadata.json").read_text(encoding="utf-8"))
-            # 5 predictable records x 1 unknown policy each: 8 eligible minus the
-            # 3 precheck error rows (url/not_found/bad_magic) which skip predict;
-            # missing_caption_ocr is caption-rule-only, shieldgemma2 predicts there
-            self.assertEqual(metadata["warnings"]["unknown_policy_count"], 5)
+            # name-level audit: ONE distinct unknown policy name ('alien_policy'),
+            # however many records it appears on (5 predictable records here)
+            self.assertEqual(metadata["warnings"]["unknown_policy_count"], 1)
 
 
 class TestLiveShieldGemma2(unittest.TestCase):

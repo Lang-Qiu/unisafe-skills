@@ -16,9 +16,11 @@ Contract (M3_SPEC section 5):
   - risk_categories = mapped policies with yes_p >= threshold (M0 section 4 via
     references/category_mapping.json 'shieldgemma2', which carries both the M0
     display names and the discovery-verified runtime keys);
-  - unmapped policy names are NEVER guessed: counted in unknown_policy_count
-    (surfaced as run_metadata.warnings.unknown_policy_count, plan AD-8) and the
-    raw scores stay in raw_output.policy_scores; unsafe with no mapped category
+  - unmapped policy names are NEVER guessed: unknown_policy_count is a
+    NAME-LEVEL audit — the count of distinct unmapped policy names seen this
+    run, threshold-independent (surfaced as
+    run_metadata.warnings.unknown_policy_count, plan AD-8); the raw scores stay
+    in raw_output.policy_scores on every row; unsafe with no mapped category
     falls back to general_harm (M0 section 4);
   - NaN probabilities -> record-level error row (defensive: the 4-bit failure
     shape observed in task 4);
@@ -39,8 +41,11 @@ DEFAULT_MODEL_ID = "google/shieldgemma-2-4b-it"
 DEFAULT_TIMEOUT_S = 120.0
 DEFAULT_THRESHOLD = 0.5
 
-FIX_DEPS = ("FIX: pip install -r requirements-shieldgemma.txt "
-            "(torch/transformers/bitsandbytes/pillow are required for shieldgemma2)")
+FIX_DEPS = ("FIX: install the torch build that matches your CUDA/CPU first "
+            "(see https://pytorch.org/get-started/locally/), then run "
+            "`pip install -r requirements-shieldgemma.txt` for transformers/"
+            "accelerate/bitsandbytes/pillow. torch is intentionally not pinned "
+            "in that file.")
 FIX_GATED = ("FIX: gated model access missing. Three steps: (1) open "
              "https://huggingface.co/{model_id} and accept the license; "
              "(2) run `hf auth login` with a token of that account; (3) re-run "
@@ -61,12 +66,18 @@ class ShieldGemma2Guard(GuardAdapter):
         self.threshold: float = float(config.get("threshold")
                                       if config.get("threshold") is not None else DEFAULT_THRESHOLD)
         self.hf_token: Optional[str] = config.get("hf_token")
-        self.unknown_policy_count = 0  # run-level audit, read by main.py (AD-8)
+        self._unknown_policy_names: set = set()  # name-level audit backing store
         self._model = None
         self._processor = None
         self._device: Optional[str] = None
         self._policy_keys: List[str] = []
         self._mapping: Dict[str, List[str]] = load_category_mapping().get("shieldgemma2", {})
+
+    @property
+    def unknown_policy_count(self) -> int:
+        """Distinct unmapped policy names seen this run (name-level audit, AD-8;
+        threshold-independent — read by main.py into run_metadata.warnings)."""
+        return len(self._unknown_policy_names)
 
     @property
     def capabilities(self) -> Dict[str, Any]:
@@ -199,14 +210,14 @@ class ShieldGemma2Guard(GuardAdapter):
         is_unsafe = max_yes >= self.threshold
         categories: List[str] = []
         for key, yes in scored:
+            if key not in self._mapping:
+                # never guess a mapping (M3_SPEC section 5); name-level audit,
+                # threshold-independent — an unknown name is a model property
+                self._unknown_policy_names.add(key)
+                continue
             if yes < self.threshold:
                 continue
-            mapped = self._mapping.get(key)
-            if mapped is None:
-                # never guess a mapping (M3_SPEC section 5); audited run-level
-                self.unknown_policy_count += 1
-                continue
-            for category in mapped:
+            for category in self._mapping[key]:
                 if category not in categories:
                     categories.append(category)
         if is_unsafe and not categories:

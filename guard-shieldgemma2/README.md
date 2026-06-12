@@ -9,7 +9,7 @@ point for agents is [`SKILL.md`](SKILL.md); this README is for humans.
 | guard | type | layer | source |
 |---|---|---|---|
 | `caption-rule` | keyword baseline on image caption/OCR text (stdlib, deterministic; **pipeline baseline**, never reads pixels) | Core-Minimal | [`assets/caption_keywords.json`](assets/caption_keywords.json) |
-| `shieldgemma2` | ShieldGemma 2 4B image classifier, local 4-bit inference, 3 policies → per-policy yes-probability | Core-Full (M3 Phase 2) | [model card](https://huggingface.co/google/shieldgemma-2-4b-it) (gated; mirror via `--model-id`) |
+| `shieldgemma2` | ShieldGemma 2 4B image classifier, local int8 inference, 3 policies → per-policy yes-probability | Core-Full (M3 Phase 2) | [model card](https://huggingface.co/google/shieldgemma-2-4b-it) (gated; mirror via `--model-id`) |
 
 Same unified guard-result schema and metric definitions as
 [`guard-llama-guard`](../guard-llama-guard/) — the Guard interface generalizes
@@ -30,10 +30,11 @@ then a metrics table in `out_smoke/metrics/metrics.md`. Tests:
 `python -m unittest discover -s tests` (stdlib only, no network/GPU; ShieldGemma
 live tests are opt-in via `SHIELDGEMMA2_LIVE=1`).
 
-For the ShieldGemma 2 path: `pip install -r requirements-shieldgemma.txt`,
-accept the license on the HF page (`hf auth login`), then add
-`--guards caption-rule,shieldgemma2`. 8GB-VRAM machines use the default
-4-bit NF4 load.
+For the ShieldGemma 2 path: install the torch build matching your CUDA/CPU
+first, then `pip install -r requirements-shieldgemma.txt`, accept the license
+on the HF page (`hf auth login`), then add `--guards caption-rule,shieldgemma2`.
+8GB-VRAM machines use the default int8 CUDA load; 4-bit NF4 is documented as
+N/A on this stack because it returned NaNs in M3.
 
 ## Contracts
 

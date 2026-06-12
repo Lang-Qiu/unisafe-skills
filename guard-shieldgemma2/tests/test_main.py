@@ -194,6 +194,45 @@ class TestResume(unittest.TestCase):
             self.assertEqual(len(rows), 8)  # conservation regardless of resume
 
 
+class TestDirectoryInput(unittest.TestCase):
+    """Directory mode + path-resolution base (待甲确认.md #5 point 1, review I-2).
+
+    Two JSONL files discovered from one input directory; relative image paths
+    must resolve against the JSONL files' own directory — never the CWD (the
+    test deliberately references images that do not exist relative to CWD).
+    """
+
+    def test_two_files_resolve_against_their_directory(self):
+        sys.path.insert(0, str(ROOT / "scripts"))
+        from make_synth_images import solid  # noqa: E402
+
+        def record(rid, path, caption):
+            return {"id": rid, "task_type": "image_safety", "modality": ["image"],
+                    "content": {"images": [{"path": path, "url": None,
+                                            "caption": caption, "ocr": None}]},
+                    "label": {"target": "image", "is_unsafe": False,
+                              "policy_action": "allow", "canonical_categories": []}}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            data = Path(tmp) / "unified"
+            (data / "images").mkdir(parents=True)
+            (data / "images" / "a.png").write_bytes(solid(8, (10, 20, 30)))
+            (data / "part1.jsonl").write_text(
+                json.dumps(record("synthimg:test:888001", "images/a.png", "a plain wall"))
+                + "\n", encoding="utf-8")
+            (data / "part2.jsonl").write_text(
+                json.dumps(record("synthimg:test:888002", "images/a.png", "another wall"))
+                + "\n", encoding="utf-8")
+            out = Path(tmp) / "out"
+            code, _ = run_main(["--input", str(data), "--output-dir", str(out),
+                                "--guards", "caption-rule"])
+            self.assertEqual(code, 0)
+            rows = read_rows(out / "predictions" / "caption-rule.predictions.jsonl")
+            self.assertEqual(len(rows), 2)  # both files discovered and aggregated
+            for row in rows:
+                self.assertIsNone(row["error"], row["id"])  # resolution hit the image
+
+
 class TestExitPrecedents(unittest.TestCase):
     def test_all_unknown_guards_is_fatal(self):
         with tempfile.TemporaryDirectory() as tmp:

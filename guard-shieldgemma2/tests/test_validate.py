@@ -45,7 +45,7 @@ class TestValidateOnPipelineOutput(unittest.TestCase):
         cls.tmp.cleanup()
 
     def test_pass_with_against_and_metadata(self):
-        code, stdout = run(validate, [str(cls := self.pred),
+        code, stdout = run(validate, [str(self.pred),
                                       "--against", str(FIXTURE),
                                       "--metadata", str(self.out / "run_metadata.json")])
         self.assertEqual(code, 0, stdout)
