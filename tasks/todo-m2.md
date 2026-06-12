@@ -39,14 +39,14 @@
 
 - [x] 任务 13：消融 A+B 回填（M · GPU · 依赖 C1）——A：plain-string 变体渲染空会话（diff 实证）→ 3/5 判定翻转，模板=正确性开关；B：token 概率是唯一连续分来源，AUROC 1.0 vs null（1d49a96）
 - [x] 任务 14：消融 D batch 扫描（S · GPU · 依赖 C1）——bs 1→8 单条延迟 249.7→128.2ms，16 饱和；判定批不变，conf 漂移 0.0179 与 M1 记录吻合（标注来源）
-- [x] 任务 15：消融 C 阈值扫描（llama 单源 ✅；judge 源依赖 12 后补）——双峰分布，0.3–0.7 无差别；0.75 消探针误报不丢召回（n=5 机制级结论）
+- [x] 任务 15：消融 C 阈值扫描（llama 单源 + judge 第二源均 ✅）——llama：双峰，0.75 消探针误报不丢召回；judge：唯一 FP 为高置信误判，阈值不可救（误报形状与 llama 相反，校准告诫再实证）（c0470ff）
 - [ ] 任务 16：trigger eval 实测档（与甲 #3 合并；人工新会话）（S · 依赖 C1 + 甲配合）
 - [x] 任务 17：report 模板 v2 占位符（XS · 依赖 C1）——comparison/by-category/adversarial/Caveats 四块，v1 不动（389ae56）
 - [ ] 任务 18：全量 1,725 条结果档 + E2E 截图（S+等待 · 依赖 C1 + 甲 #2 数据；judge 行依赖 C2 可选；judge 未完则标 **partial**，不得声称三 Guard 全量）
 
 ## Phase 4 · 交付（硬依赖 C1；软吸收 C2/P3/18）
 
-- [ ] 任务 19：文档同步终稿：SKILL.md（≤250 行）+ io-contract §6/§7 措辞 + README judge 行（S · 依赖 C1；回填 C2/P3 实况）
-- [ ] 任务 20：`root/M2_summary.md`（追溯表 + N/A + 限制 + Backlog + Metric Caveats 四条）+ spec §6 全量 sweep + push（S · 依赖 19）
+- [x] 任务 19：文档同步终稿：SKILL.md（~168 行，指针全验证）+ io-contract §6/§7 措辞历史化 + README judge 行与测试计数修正（6234537）
+- [x] 任务 20：`root/M2_summary.md`（追溯表 + N/A + 限制/spec 偏差登记 + Backlog 更新 + Metric Caveats 四条）+ spec §6 全量 sweep + push
 
-### ☐ Checkpoint C3 = M2 技术交付：§6-H 全勾；A/B/C/D/O 全勾；E/F/G 勾或 N/A+原因+顺延；M2_summary 完整
+### ☑ Checkpoint C3 = M2 技术交付：✅（2026-06-12）§6-A/B/C/D/O/E/H 全勾；F = 消融全实测 + trigger eval N/A(人工/甲)；G = 待甲数据（顶替矩阵已出，partial 规则就位）；M2_summary 完整。人工余项：M2 截图、甲 #2/#3/#4、用户终审
