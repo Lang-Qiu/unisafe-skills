@@ -11,10 +11,10 @@
 - [x] 任务 1：M0 #5 图像路径契约草拟 + 发甲（S · 依赖无）——五要点 + 影响面 + 时间窗已落 `root/待甲确认.md` #5，推送即启动否决窗口（约至 06-14）
 - [x] 任务 2：gated 许可确认 + 权重可达性探查——官方 `gated=manual`（需用户申请，审批期同 meta-llama 先例）；**镜像路线可用**：`Nozim6690/hugging-face_shieldgemma-2-4b-it`（无门、全件、config 核验 ShieldGemma2ForImageClassification + SigLIP、8.6GB 双分片）→ 沿 M1 alpindale 模式（默认 model-id 留官方，实跑 `--model-id` 切镜像）；FIX 三形态素材定
 - [x] 任务 3：transformers 就地升级 + 回归门——4.46.3→**4.57.6**（torch 2.5.1+cu121 未动；accelerate 1.10.1、bitsandbytes 0.48.2 同装）；上游 82 测试全绿；llama sanity 5 条判定与 M1 记录逐条一致、conf 漂移 ≤7e-4（< 消融 D 容差 0.0179）；唯一注记：sanity 期间 GPU 被外部进程占用（60%/5.4GB），默认 30s 超时不够 → 用 `--timeout-s 180` 完成，纯延迟对比待 GPU 空闲复测（非门槛项）
-- [ ] 任务 4：4-bit 试装 + policy discovery（S · GPU · 依赖 2,3）——峰值显存实测 + policy 名称/顺序/输出 shape 实录（任务 12 mock 依据）
+- [x] 任务 4：量化试装 + policy discovery（S · GPU · 依赖 2,3）——**两项实测修正**：① transformers 4.57 的 Gemma3 前向要求 torch≥2.6 → 锁定 **4.51.3**（上游 82 测试复绿；ShieldGemma2 类在）；② **4-bit NF4 全 NaN**（fp32 compute/eager 均复现；CPU bf16 输出正常 → 权重无罪，bnb 0.48.2+torch 2.5.1+Gemma3/Win 组合问题）→ **基准口径改 8-bit int8**（spec §9-3 偏差登记）。实测：8-bit 峰值 **5.95GB**、载入 12s、单图 2.4–3.4s（3 策略一批）；policy keys 实录 `['dangerous','sexual','violence']`（snake_case，非 M0 显示名 → 适配器归一化层对齐）；输出 `probabilities (3,2)` (yes,no)；良性合成图判 safe（yes≤0.008）
 
 ### ☑ Checkpoint C0a（硬门）：✅（2026-06-12）#5 已推送，否决窗口启动；P1 解锁
-### ☐ Checkpoint C0b（软门）：任务 2/3/4 全清；**任一失败不得阻塞 P1/C1**
+### ☑ Checkpoint C0b（软门）：✅（2026-06-12）任务 2/3/4 全清；环境定格：torch 2.5.1+cu121 / transformers 4.51.3 / accelerate 1.10.1 / bitsandbytes 0.48.2 / 镜像权重 @ E:\LQiu\hf_cache
 
 ## Phase 1 · Core-Minimal（C0a 后；不等 C0b；零第三方依赖；M3 唯一硬门）
 
