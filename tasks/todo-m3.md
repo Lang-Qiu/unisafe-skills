@@ -20,7 +20,7 @@
 
 - [x] 任务 5：骨架 + utils 图像路由（方案 B）+ schema 字节同源断言 + 路由/magic 测试（M · 依赖 C0a）——utils 受控复制 @e72fa2be 薄层三项头注枚举；schema hash 相等；17 测试绿
 - [x] 任务 6：合成图资产 + 确定性生成器（S · 依赖 5）——7 件 69–89 字节；字节级确定性 + 与入库资产一致性双断言；21 测试绿
-- [ ] 任务 7：main.py 适配 + 缺图预检链路（AD-3）+ 多图三落点（AD-7）+ caption-rule（AD-4）+ 注册表（M · 依赖 5,6）
+- [x] 任务 7：main.py 适配 + 缺图预检链路（AD-3）+ 多图三落点（AD-7）+ caption-rule（AD-4）+ 注册表（M · 依赖 5,6）——main @3a115ecf 五项薄层头注枚举；fixture 实跑 predicted=4 errors=4 守恒；33 测试绿
 - [ ] 任务 8：缺图/异常四 error 用例 + exit 判例 + resume 测试（S · 依赖 7；提交序在 7 后）
 - [ ] 任务 9：validate.py 受控复制（预期零行修改）+ 附加字段不被拒断言（S · 依赖 7）
 - [ ] 任务 10：metrics.py 受控复制 + AD-2 薄层 + fixtures 答案钥 `image_expected.json`（两路核算）+ 测试（M · 依赖 5；提交序在 9 后）
