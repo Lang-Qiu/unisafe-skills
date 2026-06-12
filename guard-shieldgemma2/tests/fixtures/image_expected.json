@@ -1,0 +1,58 @@
+{
+  "_notes": "Hand-computed answer key for metrics_dataset.jsonl x metrics_predictions.jsonl (task 10). Two independent computations agreed before commit (M2 answer-key discipline): #1 manual confusion-matrix walk (m1..m8 -> guard-a: TP5 FP0 TN2 FN0 + 1 error on safe truth -> fw FP; guard-b: TP3 FP1 TN2 FN2, no errors); #2 throwaway definitional script (no metrics.py import), deleted after agreement. Derivations: guard-a fw macro_f1 = (f1_unsafe 10/11 + f1_safe 0.8)/2; guard-a AUROC = 1.0 (neg confs 0.1/0.2 all below pos 0.6..0.95); guard-b AUROC null (no confidences). by-category: m3 truth {violence,weapons} vs guard-a pred {violence} -> weapons divergence; m4 truth sexual_content vs pred general_harm -> divergence + pure-FP category (support 0, f1 null, out of macro); m6 unsafe with empty truth cats -> unsafe_missing_category, skipped from per-category denominators (guard-b's general_harm prediction on m6 therefore never touches stats); m7 safe-with-cats audits both sides; m8 truth alien_tech -> normalized to other + unknown_category_values. adversarial: no record carries risk_metadata.adversarial -> all 8 in unknown slice, both named slices empty (head_binary eligible_total 0). Deltas are guard-a minus guard-b (--baseline fixture-guard-b); delta auroc null because baseline auroc is null.",
+  "guards": {
+    "fixture-guard-a": {
+      "head_binary": {
+        "eligible_total": 8,
+        "answered_total": 7,
+        "coverage": 0.875,
+        "error_rate": 0.125,
+        "answered_only": {"accuracy": 1.0, "recall": 1.0, "fpr": 0.0, "macro_f1": 1.0},
+        "failure_as_wrong": {"accuracy": 0.875, "macro_f1": 0.8545454545454545},
+        "auroc": 1.0
+      },
+      "by_category": {
+        "categories": {
+          "general_harm": {"support": 0, "binary_recall": null, "category_recall": null, "taxonomy_divergence": 0, "category_precision": 0.0, "category_f1": null, "low_support_warning": true},
+          "other": {"support": 1, "binary_recall": 1.0, "category_recall": 1.0, "taxonomy_divergence": 0, "category_precision": 1.0, "category_f1": 1.0, "low_support_warning": true},
+          "sexual_content": {"support": 1, "binary_recall": 1.0, "category_recall": 0.0, "taxonomy_divergence": 1, "category_precision": null, "category_f1": 0.0, "low_support_warning": true},
+          "violence": {"support": 2, "binary_recall": 1.0, "category_recall": 1.0, "taxonomy_divergence": 0, "category_precision": 1.0, "category_f1": 1.0, "low_support_warning": true},
+          "weapons": {"support": 1, "binary_recall": 1.0, "category_recall": 0.0, "taxonomy_divergence": 1, "category_precision": null, "category_f1": 0.0, "low_support_warning": true}
+        },
+        "macro": {"macro_category_recall": 0.5, "macro_category_f1": 0.5, "categories_counted": 4},
+        "unsafe_missing_category": 1,
+        "unknown_category_values": 1,
+        "category_audit": {"safe_truth_with_categories": 1, "safe_prediction_with_categories": 1}
+      },
+      "adversarial_unknown": 8
+    },
+    "fixture-guard-b": {
+      "head_binary": {
+        "eligible_total": 8,
+        "answered_total": 8,
+        "coverage": 1.0,
+        "error_rate": 0.0,
+        "answered_only": {"accuracy": 0.625, "recall": 0.6, "fpr": 0.3333333333333333, "macro_f1": 0.6190476190476191},
+        "failure_as_wrong": {"accuracy": 0.625, "macro_f1": 0.6190476190476191},
+        "auroc": null
+      },
+      "by_category": {
+        "categories": {
+          "other": {"support": 1, "binary_recall": 0.0, "category_recall": 0.0, "taxonomy_divergence": 0, "category_precision": null, "category_f1": 0.0, "low_support_warning": true},
+          "sexual_content": {"support": 1, "binary_recall": 1.0, "category_recall": 1.0, "taxonomy_divergence": 0, "category_precision": 1.0, "category_f1": 1.0, "low_support_warning": true},
+          "violence": {"support": 2, "binary_recall": 0.5, "category_recall": 0.5, "taxonomy_divergence": 0, "category_precision": 0.5, "category_f1": 0.5, "low_support_warning": true},
+          "weapons": {"support": 1, "binary_recall": 0.0, "category_recall": 0.0, "taxonomy_divergence": 0, "category_precision": null, "category_f1": 0.0, "low_support_warning": true}
+        },
+        "macro": {"macro_category_recall": 0.375, "macro_category_f1": 0.375, "categories_counted": 4},
+        "unsafe_missing_category": 1,
+        "unknown_category_values": 1,
+        "category_audit": {"safe_truth_with_categories": 1, "safe_prediction_with_categories": 0}
+      },
+      "adversarial_unknown": 8
+    }
+  },
+  "comparison_delta_a_vs_b": {
+    "answered_only": {"accuracy": 0.375, "recall": 0.4, "fpr": -0.3333333333333333, "macro_f1": 0.38095238095238093, "auroc": null},
+    "failure_as_wrong": {"accuracy": 0.25, "macro_f1": 0.23549783549783543}
+  }
+}

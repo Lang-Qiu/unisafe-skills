@@ -23,7 +23,7 @@
 - [x] 任务 7：main.py 适配 + 缺图预检链路（AD-3）+ 多图三落点（AD-7）+ caption-rule（AD-4）+ 注册表（M · 依赖 5,6）——main @3a115ecf 五项薄层头注枚举；fixture 实跑 predicted=4 errors=4 守恒；33 测试绿
 - [x] 任务 8：缺图/异常四 error 用例 + exit 判例 + resume 测试（S · 依赖 7；提交序在 7 后）——四 error 名逐字断言；多图三落点 + 无多图时无 warnings 键；resume hits=8/misses=0；exit 1/2/1 判例；43 测试绿
 - [x] 任务 9：validate.py 受控复制（逻辑零行修改实证，仅头注）+ 附加字段不被拒断言（S · 依赖 7）——实跑输出 --against+--metadata PASS；warnings 字段过 check_record；dup/coverage/结构违规 FAIL 链路全锁；52 测试绿
-- [ ] 任务 10：metrics.py 受控复制 + AD-2 薄层 + fixtures 答案钥 `image_expected.json`（两路核算）+ 测试（M · 依赖 5；提交序在 9 后）
+- [x] 任务 10：metrics.py 受控复制 + AD-2 薄层 + fixtures 答案钥 `image_expected.json`（两路核算一致后锁定，一次性脚本已删）+ 测试（M · 依赖 5；提交序在 9 后）——metrics @e5b2f70 薄层三项头注枚举；文本桶缺席/对抗全 unknown/纯 FP 类别出 macro/Δ 分叉全锁；64 测试绿
 - [ ] 任务 11：黄金样例三件 + `test_core_isolation`（sys.modules 断言）+ SKILL.md 重写（≤250 行，清 feat 分支注记）+ README（M · 依赖 7–10）
 
 ### ☐ Checkpoint C1：spec §6-A/B/C 全勾；unittest 全绿且核心链路不 import torch/transformers/PIL/bitsandbytes；CLI 全链路 exit 0
