@@ -36,6 +36,10 @@ huggingface/
 *.bmp
 *.webp
 *.tiff
+# 例外：guard-shieldgemma2 的合成 fixture 小图（<1KB、脚本可再生、非数据集 dump——M3_SPEC §0-5；
+# 字节一致性由 tests/test_synth_images.py 锁定；真实数据集图像仍然全部不入库）
+!guard-shieldgemma2/tests/fixtures/images/*.png
+!guard-shieldgemma2/examples/images/*.png
 
 # ---- Python ----
 __pycache__/
