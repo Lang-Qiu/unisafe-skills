@@ -94,13 +94,20 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _probe_env(requested: List[str]) -> Dict[str, Any]:
+def _probe_env(requested: List[str],
+               revisions: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Reproducibility block (W1). `revisions` = {guard: commit_hash|None}, threaded
+    in by main.py from the loaded adapters. model_revision = first non-null among
+    model guards; lib versions read from package metadata (no heavy import)."""
+    revisions = dict(revisions or {})
     env: Dict[str, Any] = {
         "python": platform.python_version(),
         "platform": platform.platform(),
         "torch": None,
         "cuda": None,
-        "model_revision": None,
+        "model_revision": next((v for v in revisions.values() if v), None),
+        "model_revisions": revisions,
+        "lib_versions": {},
     }
     if "shieldgemma2" in requested:  # only pay the slow torch import when relevant
         try:
@@ -112,6 +119,12 @@ def _probe_env(requested: List[str]) -> Dict[str, Any]:
             env["cuda"] = bool(cuda.is_available()) if cuda is not None else None
         except Exception:
             pass
+        from importlib.metadata import version as _pkg_version
+        for lib in ("transformers", "bitsandbytes", "accelerate"):
+            try:
+                env["lib_versions"][lib] = _pkg_version(lib)
+            except Exception:
+                env["lib_versions"][lib] = None
     return env
 
 
@@ -219,6 +232,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         completed: List[str] = []
         failed: Dict[str, str] = {}
         timeout_effective: Dict[str, Optional[float]] = {}
+        loaded_revisions: Dict[str, Any] = {}  # W1: guard -> model commit hash (or None)
         predicted = 0
         errors = 0
         resume_hits = 0
@@ -259,6 +273,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                     if "FIX:" not in reason:
                         print(f"FIX: resolve the cause above, then re-run with --guards {name}")
                     continue
+                loaded_revisions[name] = getattr(adapter, "model_revision", None)  # W1
                 predictions_dir.mkdir(parents=True, exist_ok=True)
                 pred_path = predictions_dir / f"{name}.predictions.jsonl"
                 existing_ids = _load_existing_ids(pred_path) if args.resume else set()
@@ -361,7 +376,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             "resume": args.resume,
             "dry_run": args.dry_run,
         },
-        "env": _probe_env(requested),
+        "env": _probe_env(requested, loaded_revisions),
         "duration_s": round(timer.seconds, 3),
     }
     warnings: Dict[str, Any] = {}

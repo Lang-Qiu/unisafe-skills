@@ -47,6 +47,7 @@ class LlamaGuard(GuardAdapter):
         self.timeout_s: float = float(config.get("timeout_s") or 30.0)
         self.retries: int = int(config.get("retries") if config.get("retries") is not None else 1)
         self.hf_token: Optional[str] = config.get("hf_token")
+        self.model_revision: Optional[str] = None  # W1: resolved commit hash after load
         self._tokenizer = None
         self._model = None
         self._device: Optional[str] = None
@@ -100,6 +101,8 @@ class LlamaGuard(GuardAdapter):
         self._model = AutoModelForCausalLM.from_pretrained(
             self.model_id, torch_dtype=dtype, **auth
         ).to(self._device).eval()
+        # W1: resolved revision from the cached config (offline-friendly, no network)
+        self.model_revision = getattr(self._model.config, "_commit_hash", None)
 
         def first_id(word: str) -> int:
             ids = self._tokenizer.encode(word, add_special_tokens=False)

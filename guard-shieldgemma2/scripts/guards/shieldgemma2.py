@@ -66,6 +66,7 @@ class ShieldGemma2Guard(GuardAdapter):
         self.threshold: float = float(config.get("threshold")
                                       if config.get("threshold") is not None else DEFAULT_THRESHOLD)
         self.hf_token: Optional[str] = config.get("hf_token")
+        self.model_revision: Optional[str] = None  # W1: resolved commit hash after load
         self._unknown_policy_names: set = set()  # name-level audit backing store
         self._model = None
         self._processor = None
@@ -134,6 +135,8 @@ class ShieldGemma2Guard(GuardAdapter):
                 attn_implementation="eager", **auth).eval()
             self._quant = "none-bf16"
         self.version = self.model_id
+        # W1: resolved revision from the cached config (offline-friendly, no network)
+        self.model_revision = getattr(self._model.config, "_commit_hash", None)
 
     # ------------------------------------------------------------- inference
     def _forward_probs(self, image) -> List[Tuple[str, float]]:
