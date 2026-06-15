@@ -9,7 +9,7 @@
 ## Phase A · Core（三任务并行，互不依赖）
 
 - [x] 任务 1（W1）可复现性硬化：两侧 adapter 暴露 `model_revision`（`config._commit_hash`）+ main.py env 块写 `model_revision`/`model_revisions`/`lib_versions`（transformers/bnb/accelerate，importlib.metadata 不触网）；rule/caption-rule 如实 null；真跑实测 `model_revision=548e04f…86` 非 null；离线 8 测试绿（llama 94/sg2 98）。SHA256 留 §9-1 可选未做（足够辨版本）
-- [ ] 任务 2（W2-doc）trigger-eval 修正：第 3 行"未实测"↔§5 一致；§1 增指标评估正例；§5 建 before/after 回归脚手架（after 待人工）；负例表未动（S · 依赖无）
+- [x] 任务 2（W2-doc）trigger-eval 修正：llama 第 3 行状态改"已实测一轮(before)"与 §5 一致；§1 增 P9/P10（评估已有预测）；§5 改 before/after 回归表；§4 过时"任务18"引用修为 W2-T4；sg2 加 P6 + before/after 脚手架（图像侧 before 空缺如实）；**负例表两侧均未动**（S · 依赖无）
 - [ ] 任务 3（W3）方差 smoke：sg2 opt-in（`SHIELDGEMMA2_LIVE=1`），固定 **N=5/K=3**，int8 测 yes-prob 极差/std + **flip_rate**；落 notes；离线 skip（S · 依赖无）
 
 ### ☐ Checkpoint Cα（Core 软门）：T1 真跑 revision 非 null + T3 opt-in 绿 + T2 文档一致 + **llama 90/sg2 94 套件绿**

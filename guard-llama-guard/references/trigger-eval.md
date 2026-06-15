@@ -1,6 +1,6 @@
 # Trigger eval — guard-llama-guard 触发评测
 
-> 状态：**文档化判定（未实测）**。实测协议见 §3；实测后用真实结果替换"预期判定"列并更新日期。
+> 状态：**已实测一轮（2026-06-15，见 §5 before）**：负例 0 误触、正例 7/8（唯 P8 AUROC 未触发）。M3.5 W2 据此调 description 后需**人工复测一轮**（§5 after，顺延 M4）。
 > 判定依据：本 skill frontmatter description 的动词锚点（run/evaluate/score/benchmark）+
 > 名词锚点（guard/moderation/metrics/unified safety dataset）+ 显式负触发（dataset-* 与
 > dataset-format-checker 的职责排除）。
@@ -18,6 +18,8 @@
 | P6 | "How often does the guard over-refuse on XSTest probes?" | 触发 | over-refuse + guard |
 | P7 | "用关键词基线先跑个 smoke，再上 llama-guard" | 触发 | smoke/基线/llama-guard |
 | P8 | "Compute AUROC for the moderation model's predictions" | 触发 | AUROC + moderation |
+| P9 | "我有一份 guard 预测的 JSONL，对着真值标签算一下 AUROC/准确率" | 触发 | 评估**已有预测文件** + 指标（补 P8 盲测缺口的"评估既有预测"语义，W2 description 已覆盖） |
+| P10 | "Score my saved guard predictions against the gold labels and give me precision/recall" | 触发 | score + saved predictions + 指标 |
 
 ## 2. 负例
 
@@ -41,11 +43,14 @@
 ## 4. 达标线与回流
 
 - **达标**：正例 ≥7/8 触发；负例 0 误触。
-- **不达标**：修订 frontmatter description（增/删锚点词或负触发短语），回流任务 18
-  （SKILL.md 终稿）后重测，旧结果保留在本文件作对照。
+- **不达标**：修订 frontmatter description（增/删锚点词或负触发短语），回流 **M3.5 W2-T4**
+  （description 调优）后重测，旧结果保留在本文件 §5 作 before/after 对照。
 
-## 5. 实测记录
+## 5. 实测记录（before/after 回归）
 
-| 日期 | 模型版本 | 正例通过 | 负例误触 | 结论 |
-|---|---|---|---|---|
-| 6/15/2026 | GPT 5.4 Thinking HIGH | 7/8 | 0 | 通过。文件夹里没有成型文件的情况下，AUROC提示词因为不够直接没触发本SKILL |
+> M3.5 W2 把人工盲测从"通过门"移为**回归报告项**（M3.5_SPEC 必改 1）：before=M2 基线，after=description 调优后人工复测（顺延 M4）。
+
+| 阶段 | 日期 | 模型版本 | 正例通过 | 负例误触 | 结论 |
+|---|---|---|---|---|---|
+| **before**（M2 基线） | 2026-06-15 | GPT 5.4 Thinking HIGH | 7/8 | 0 | 通过；P8 的 AUROC 提示词在"无成型文件"时因不够直接未触发本 skill |
+| **after**（M3.5 W2 description 调优后） | 待测（M4 前人工） | — | — | — | description 已扩"评估已有预测/算指标"语义 + 新增 P9/P10；预期补上 P8 类触发、负例仍 0 |
