@@ -1,0 +1,66 @@
+{
+  "canonical_categories": [
+    "hate_discrimination",
+    "harassment_bullying",
+    "sexual_content",
+    "child_safety",
+    "self_harm",
+    "violence",
+    "weapons",
+    "illicit_behavior",
+    "cyber_safety",
+    "drugs",
+    "chemical_biological",
+    "fraud_financial_crime",
+    "privacy_pii",
+    "extremism_terrorism",
+    "misinformation",
+    "copyright",
+    "animal_abuse",
+    "profanity_toxicity",
+    "political_persuasion",
+    "medical_safety",
+    "legal_safety",
+    "general_harm",
+    "other"
+  ],
+  "fallback": "other",
+  "unsafe_no_category_fallback": "general_harm",
+  "unsafebench": {
+    "exact_map": {
+      "Hate": [
+        "hate_discrimination"
+      ],
+      "Harassment": [
+        "harassment_bullying"
+      ],
+      "Violence": [
+        "violence"
+      ],
+      "Self-harm": [
+        "self_harm"
+      ],
+      "Sexual": [
+        "sexual_content"
+      ],
+      "Shocking": [
+        "general_harm"
+      ],
+      "Illegal activity": [
+        "illicit_behavior"
+      ],
+      "Deception": [
+        "misinformation"
+      ],
+      "Political": [
+        "political_persuasion"
+      ],
+      "Public and personal health": [
+        "medical_safety"
+      ],
+      "Spam": [
+        "other"
+      ]
+    }
+  }
+}

@@ -1,0 +1,209 @@
+{
+  "canonical_categories": [
+    "hate_discrimination",
+    "harassment_bullying",
+    "sexual_content",
+    "child_safety",
+    "self_harm",
+    "violence",
+    "weapons",
+    "illicit_behavior",
+    "cyber_safety",
+    "drugs",
+    "chemical_biological",
+    "fraud_financial_crime",
+    "privacy_pii",
+    "extremism_terrorism",
+    "misinformation",
+    "copyright",
+    "animal_abuse",
+    "profanity_toxicity",
+    "political_persuasion",
+    "medical_safety",
+    "legal_safety",
+    "general_harm",
+    "other"
+  ],
+  "fallback": "other",
+  "unsafe_no_category_fallback": "general_harm",
+  "wildguardmix": {
+    "$comment": "Map WildGuardMix raw subcategory values to canonical categories. exact_map is checked first; keyword_map is checked against normalized subcategory text.",
+    "exact_map": {
+      "benign": [],
+      "cyberattack": [
+        "cyber_safety"
+      ],
+      "sexual_content": [
+        "sexual_content"
+      ],
+      "fraud_assisting_illegal_activities": [
+        "fraud_financial_crime"
+      ],
+      "private_information_individual": [
+        "privacy_pii"
+      ],
+      "sensitive_information_organization_government": [
+        "privacy_pii"
+      ],
+      "mental_health_over-reliance_crisis": [
+        "medical_safety"
+      ],
+      "defamation_encouraging_unethical_or_unsafe_actions": [
+        "general_harm"
+      ],
+      "causing_material_harm_by_disseminating_misinformation": [
+        "misinformation"
+      ],
+      "disseminating_false_or_misleading_information_encouraging_disinformation_campaigns": [
+        "misinformation"
+      ],
+      "toxic_language_hate_speech": [
+        "hate_discrimination"
+      ],
+      "violence_and_physical_harm": [
+        "violence"
+      ],
+      "copyright_violations": [
+        "copyright"
+      ],
+      "others": [
+        "other"
+      ]
+    },
+    "keyword_map": {
+      "cyber": [
+        "cyber_safety"
+      ],
+      "cyberattack": [
+        "cyber_safety"
+      ],
+      "hack": [
+        "cyber_safety"
+      ],
+      "malware": [
+        "cyber_safety"
+      ],
+      "phishing": [
+        "cyber_safety"
+      ],
+      "privacy": [
+        "privacy_pii"
+      ],
+      "private_information": [
+        "privacy_pii"
+      ],
+      "sensitive_information": [
+        "privacy_pii"
+      ],
+      "pii": [
+        "privacy_pii"
+      ],
+      "dox": [
+        "privacy_pii"
+      ],
+      "weapons": [
+        "weapons"
+      ],
+      "weapon": [
+        "weapons"
+      ],
+      "gun": [
+        "weapons"
+      ],
+      "bomb": [
+        "weapons"
+      ],
+      "explosive": [
+        "weapons"
+      ],
+      "sexual": [
+        "sexual_content"
+      ],
+      "sex": [
+        "sexual_content"
+      ],
+      "porn": [
+        "sexual_content"
+      ],
+      "self_harm": [
+        "self_harm"
+      ],
+      "self-harm": [
+        "self_harm"
+      ],
+      "suicide": [
+        "self_harm"
+      ],
+      "misinformation": [
+        "misinformation"
+      ],
+      "disinformation": [
+        "misinformation"
+      ],
+      "false_or_misleading": [
+        "misinformation"
+      ],
+      "fraud": [
+        "fraud_financial_crime"
+      ],
+      "scam": [
+        "fraud_financial_crime"
+      ],
+      "financial": [
+        "fraud_financial_crime"
+      ],
+      "medical": [
+        "medical_safety"
+      ],
+      "mental_health": [
+        "medical_safety"
+      ],
+      "health": [
+        "medical_safety"
+      ],
+      "legal": [
+        "legal_safety"
+      ],
+      "law": [
+        "legal_safety"
+      ],
+      "illegal": [
+        "illicit_behavior"
+      ],
+      "illicit": [
+        "illicit_behavior"
+      ],
+      "hate": [
+        "hate_discrimination"
+      ],
+      "discrimination": [
+        "hate_discrimination"
+      ],
+      "violence": [
+        "violence"
+      ],
+      "physical_harm": [
+        "violence"
+      ],
+      "copyright": [
+        "copyright"
+      ],
+      "political": [
+        "political_persuasion"
+      ],
+      "election": [
+        "political_persuasion"
+      ],
+      "defamation": [
+        "general_harm"
+      ],
+      "unsafe": [
+        "general_harm"
+      ],
+      "others": [
+        "other"
+      ],
+      "benign": []
+    }
+  }
+}

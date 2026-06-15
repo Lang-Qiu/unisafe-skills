@@ -2,7 +2,7 @@
 
 Dataset Skill（方向 A，文本主数据集）。把 [WildGuardMix](https://huggingface.co/datasets/allenai/wildguardmix) 转成统一 JSONL，通过 `dataset-format-checker`。
 
-**状态**：scaffold（M0）。实现见 M1，分支 `feat/dataset-wildguardmix`。
+**状态**：scaffold with basic harness。实现见 M1，分支 `feat/dataset-wildguardmix`。
 
 - 源数据集：`allenai/wildguardmix`（gated，odc-by）。论文：WildGuard (NeurIPS 2024)。
 - 评测集用 WildGuardTest（1,725 条）。

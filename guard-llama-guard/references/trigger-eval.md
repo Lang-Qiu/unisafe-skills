@@ -19,7 +19,7 @@
 | P7 | "用关键词基线先跑个 smoke，再上 llama-guard" | 触发 | smoke/基线/llama-guard |
 | P8 | "Compute AUROC for the moderation model's predictions" | 触发 | AUROC + moderation |
 
-## 2. 负例（不应触发本 skill，≥6 条；同时发甲做盲测 = `待甲确认.md` #3）
+## 2. 负例
 
 | # | 用户原话 | 预期判定 | 应触发 |
 |---|---|---|---|
@@ -30,7 +30,7 @@
 | N5 | "把 HarmBench 下载下来转成统一 JSONL" | 不触发 | download-text-modal-dataset |
 | N6 | "给这个图像数据集跑安全分类" | 不触发 | guard-shieldgemma2（M3）；本 skill 的 When-NOT-to-use 已排除 |
 
-## 3. 实测协议（待执行）
+## 3. 实测协议
 
 1. 在装好全部 skills 的环境中，**每条 prompt 开一个全新会话**提问；
 2. 记录模型是否调用 `guard-llama-guard`（以工具调用/SKILL.md 读取为准）；
@@ -48,4 +48,4 @@
 
 | 日期 | 模型版本 | 正例通过 | 负例误触 | 结论 |
 |---|---|---|---|---|
-| —（未实测） | — | — | — | 文档化判定先行；实测顺延至 C3 前或 M2 |
+| 6/15/2026 | GPT 5.4 Thinking HIGH | 7/8 | 0 | 通过。文件夹里没有成型文件的情况下，AUROC提示词因为不够直接没触发本SKILL |
