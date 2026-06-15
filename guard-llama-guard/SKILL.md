@@ -5,8 +5,10 @@ description: Run text safety guards (Llama Guard 3, keyword rule baseline, LLM-a
   JSONL plus evaluation metrics (Accuracy, Macro-F1, Recall, FPR, AUROC, Over-refusal,
   per-category and adversarial splits, multi-guard comparison). Use this skill when the
   user asks to run, evaluate, score, compare, or benchmark guards or moderation models
-  on a unified safety dataset, or to compute guard safety metrics. Not for building or
-  converting datasets (use dataset-* skills) and not for checking dataset format (use
+  on a unified safety dataset, or to compute guard safety metrics — including scoring
+  or computing AUROC / precision / recall / FPR for an existing or saved set of guard
+  (or moderation-model) predictions against gold labels. Not for building or converting
+  datasets (use dataset-* skills) and not for checking dataset format (use
   dataset-format-checker).
 ---
 

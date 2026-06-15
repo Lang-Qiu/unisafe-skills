@@ -16,7 +16,7 @@
 
 ## Phase B · Plus（行为变更 + W4 硬门）
 
-- [ ] 任务 4（W2-desc）description 调优：两侧 SKILL.md frontmatter 扩"评估预测/算指标"语义，**不碰负例排除边界**；≤250 行；盲测复测=报告项顺延 M4（S · 依赖 T2）
+- [x] 任务 4（W2-desc）description 调优：两侧 SKILL.md frontmatter 加"score/compute AUROC·precision·recall for an existing/saved set of guard predictions against gold labels"（补 P8"评估已有预测"缺口）；**负例排除子句两侧未动**（llama 5/sg2 3 处 dataset 排除仍在，自检 diff 无 dataset 触发词进正例）；行数 llama 173/sg2 139 ≤250；盲测复测=报告项顺延 M4（S · 依赖 T2）
 - [ ] 任务 5（W4）judge 并发（TDD）：`llm_judge.predict_batch`（有界 ThreadPool，按 id 回填）+ main.py `--judge-concurrency N`（默认 1）；测：串行等价 / id 行集合相同 / **success·errors·skipped 守恒** / mock-sleep 证提速 / 默认串行（M · 依赖 Cα 提交序）
 - [ ] 任务 6（W4-live）实测：judge 子集 `-j1` vs `-j4`（凭证 env-only），壁钟提速 **≥30%(目标≥2×)** + 计数逐项守恒 + 输出按 id 相同；M2_summary 台账登记 **R7 superseded**（S · 依赖 T5 + judge 凭证）
 

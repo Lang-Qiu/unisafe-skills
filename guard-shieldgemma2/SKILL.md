@@ -1,6 +1,6 @@
 ---
 name: guard-shieldgemma2
-description: Run image safety guards over unified image_safety JSONL and score them. Wraps ShieldGemma 2 (google/shieldgemma-2-4b-it, local int8 baseline, 3 policies) plus a zero-dependency caption/OCR keyword baseline, emits the same unified guard-result schema as the text guards, and computes Accuracy/Macro-F1/Recall/FPR/AUROC with dual error basis. Use this skill to evaluate IMAGE safety guards (UnsafeBench-style data, image moderation, ShieldGemma). Do NOT use it for text prompt/response safety (that is guard-llama-guard) or for downloading/converting datasets (those are the dataset-* skills).
+description: Run image safety guards over unified image_safety JSONL and score them. Wraps ShieldGemma 2 (google/shieldgemma-2-4b-it, local int8 baseline, 3 policies) plus a zero-dependency caption/OCR keyword baseline, emits the same unified guard-result schema as the text guards, and computes Accuracy/Macro-F1/Recall/FPR/AUROC with dual error basis. Use this skill to evaluate IMAGE safety guards (UnsafeBench-style data, image moderation, ShieldGemma), or to score / compute AUROC / precision / recall for an existing or saved set of image-guard predictions against gold labels. Do NOT use it for text prompt/response safety (that is guard-llama-guard) or for downloading/converting datasets (those are the dataset-* skills).
 ---
 
 # guard-shieldgemma2 — image safety guards on unified JSONL
