@@ -69,6 +69,13 @@
 - **非-NaN 漂移（6 张 int8-成功图）**：int8 vs CPU 单策略漂移 mean **0.32** / max **0.60**，**3/6 判定翻转**（int8 漏报真值 2 例、int8 误报 1 例）。**即便 int8 没 NaN，它在自然图像上的判定也只有约一半可信**。
 - **量化口径结论强化**：§2 真实矩阵的 int8 数字（Recall 0.125 / AUROC 0.613）是**量化退化下界**，非模型真实质量；CPU bf16 全量 2037 ≈ 42h 不实际 → 档标 `partial_shieldgemma2`。原始对照在 `out_cpu_crosscheck/`（gitignore）。
 
+### 6.1b run-to-run 确定性（M3.5 W3 方差 smoke，2026-06-16；固定 N=5/K=3）
+
+opt-in 测试 `tests/test_variance_smoke.py`（`SHIELDGEMMA2_LIVE=1`）对同 5 张图 int8 连跑 3 次：
+
+- **flip_rate = 0.000、yes-prob 极差 = 0.000000、mean policy σ = 0.000000** → **int8 完全确定性**（同输入永远同输出）。
+- 含义：int8 的 19.4% NaN 与对 CPU 的漂移（§6.1/§6.1a）是**确定性量化伪影**，不是随机噪声——"同一张图每次都坏成一样"。对可复现性是好事（结果稳定可复现），对判别质量是坏事（稳定地偏）。阈值/重跑救不了，只能换精度口径（与 §6.2 结论一致）。
+
 ### 6.2 阈值扫描（int8 分数上；量化漂移背景下解读）
 
 | threshold | 判 unsafe 的合成图 |

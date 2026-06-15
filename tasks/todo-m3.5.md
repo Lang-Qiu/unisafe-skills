@@ -10,9 +10,9 @@
 
 - [x] 任务 1（W1）可复现性硬化：两侧 adapter 暴露 `model_revision`（`config._commit_hash`）+ main.py env 块写 `model_revision`/`model_revisions`/`lib_versions`（transformers/bnb/accelerate，importlib.metadata 不触网）；rule/caption-rule 如实 null；真跑实测 `model_revision=548e04f…86` 非 null；离线 8 测试绿（llama 94/sg2 98）。SHA256 留 §9-1 可选未做（足够辨版本）
 - [x] 任务 2（W2-doc）trigger-eval 修正：llama 第 3 行状态改"已实测一轮(before)"与 §5 一致；§1 增 P9/P10（评估已有预测）；§5 改 before/after 回归表；§4 过时"任务18"引用修为 W2-T4；sg2 加 P6 + before/after 脚手架（图像侧 before 空缺如实）；**负例表两侧均未动**（S · 依赖无）
-- [ ] 任务 3（W3）方差 smoke：sg2 opt-in（`SHIELDGEMMA2_LIVE=1`），固定 **N=5/K=3**，int8 测 yes-prob 极差/std + **flip_rate**；落 notes；离线 skip（S · 依赖无）
+- [x] 任务 3（W3）方差 smoke：sg2 opt-in（`SHIELDGEMMA2_LIVE=1`），固定 **N=5/K=3**（synth 生成自包含），int8 测 yes-prob 极差/std + **flip_rate**；离线 skip（sg2 99 测试 2 skip）；**live 实测 flip_rate=0/极差=0/σ=0 → int8 完全确定性**（NaN/漂移=确定性伪影非随机噪声），落 notes §6.1b（S · 依赖无）
 
-### ☐ Checkpoint Cα（Core 软门）：T1 真跑 revision 非 null + T3 opt-in 绿 + T2 文档一致 + **llama 90/sg2 94 套件绿**
+### ☑ Checkpoint Cα（Core 软门）：✅（2026-06-16）T1 真跑 `model_revision=548e04f…` 非 null + T3 opt-in 绿且 flip_rate=0 + T2 文档一致 + **llama 94/sg2 99 套件绿**
 
 ## Phase B · Plus（行为变更 + W4 硬门）
 
