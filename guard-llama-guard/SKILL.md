@@ -105,6 +105,11 @@ metrics.json also carries a `comparison` pivot (delta vs `--baseline`, default r
    `--metadata <out>/run_metadata.json` to also cross-check skip counts).
 5. Run `scripts/metrics.py` (add `--by-category --adversarial-split` for the M2
    analyses); deliver `metrics/metrics.md` to the user.
+6. *(optional)* Run `scripts/calibrate.py --predictions <out>/predictions --dataset
+   <input> --output-dir <out>/calibration` to pick a threshold instead of the fixed
+   0.5: it sweeps the ROC curve and recommends `max_macro_f1` / `recall_at_fpr_budget`
+   operating points (guards without a continuous score, e.g. `rule`, are reported as
+   not-calibratable). Real-data finding: this beats OR-ensembling a weak guard.
 
 ## Failure handling
 

@@ -79,11 +79,17 @@ guard-llama-guard; shared M0 §5 contract). Full I/O details:
    `--adversarial-split` (tri-state; image data usually lands entirely in
    `unknown` — that is honest counting, not a bug), `--baseline <guard>`
    (comparison deltas when ≥2 guards are joined; default `caption-rule`).
-5. Judge by **exit code + `RESULT:` line**; never pipe through `tail`.
+5. *(optional)* `calibrate.py --predictions <out>/predictions --dataset <input>
+   --output-dir <out>/calibration` → ROC operating-point table + recommended
+   thresholds (`max_macro_f1` / `recall_at_fpr_budget`). **Calibrate on CPU bf16
+   scores, not int8** — int8 scores carry quantization noise (notes §6); calibrating
+   on them calibrates to the artifact.
+6. Judge by **exit code + `RESULT:` line**; never pipe through `tail`.
 
 Key options: `--threshold` (shieldgemma2 unsafe cut on max yes-probability,
-default 0.5 = model-card default, not calibrated); `--timeout-s` (default:
-shieldgemma2 120s); `--device cuda|cpu`; `--limit N`; `--resume`.
+default 0.5 = model-card default, not calibrated — use `calibrate.py` on a CPU
+bf16 reference to pick one); `--timeout-s` (default: shieldgemma2 120s);
+`--device cuda|cpu`; `--limit N`; `--resume`.
 
 ## Failure handling
 

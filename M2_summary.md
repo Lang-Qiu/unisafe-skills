@@ -42,6 +42,23 @@
 
 > 旧 `out_m2_threeguard/` 顶替矩阵（10 eligible 合成）已退役为机制自检留档；真数据档以本节为准。
 
+### 2.3 阈值校准 + ensemble 分析（效果提升落地，2026-06-15）
+
+**问题**：固定阈值 0.5 是模型卡默认、未校准；能否用 ensemble 或校准提升效果？两条都实测了：
+
+- **ensemble 被实测否定**：全量 rule+llama 的 `OR/AND` 没一个在 F1 上赢过 llama 单独（OR 把召回抬到 0.736 但 FPR 0.06→0.17、F1 反降）；三 guard 子集只有 `OR(llama,judge)` F1 微胜（0.737→0.750）且 FPR 升、搭 judge 22.5s/条。结论：**强+弱组合被强者支配，ensemble 不是杠杆**。
+- **阈值校准是真杠杆**：llama AUROC 0.888（排序好），沿 ROC 移阈值**严格支配** OR-ensemble——llama @ thr=0.30 达 recall 0.747 / FPR 0.135 / F1 0.607，比 OR(rule,llama) 的 0.736 / 0.166 / 0.564 三项全胜。
+
+**落地为 skill 能力**：新增 `scripts/calibrate.py`（两侧受控复制，各 8 测试答案钥锁定）——扫 ROC 出操作点表 + 推荐阈值。llama-guard 实测推荐（`out_text_real/calibration/`）：
+
+| 操作点 | thr | Recall | FPR | Macro-F1 |
+|---|---|---|---|---|
+| default（现状） | 0.50 | 0.664 | 0.075 | 0.779 |
+| **max_macro_f1（均衡推荐）** | 0.55 | 0.638 | 0.056 | **0.793** |
+| recall_at_FPR≤0.1（高召回） | 0.45 | 0.683 | 0.086 | 0.774 |
+
+rule 无连续分 → 正确判 not-calibratable。图像侧 shieldgemma2 校准须用 CPU bf16 参考分（int8 分上校准 = 对量化噪声校准），见 `M3_summary.md`。
+
 ## 3. N/A / 待外部（不删项规则）
 
 | 项 | 原因 | 顺延 |
