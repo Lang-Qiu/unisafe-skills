@@ -24,7 +24,7 @@
 
 ## Phase C · 交付
 
-- [ ] 任务 7：`root/M3.5_summary.md`（W1-W4 追溯表 + 真实数字 revision/方差+flip_rate/提速倍数 + before/after 触发脚手架 + R7 偏差 + §12 后置效果台账指针）+ spec §10 全勾 sweep + 泄漏自查 + push（M · 依赖 T1-T6 终态）
+- [x] 任务 7：`root/M3.5_summary.md`（W1-W4 追溯表 + 真实数字 revision 548e04f/flip_rate 0/提速 3.86× + before/after 触发指针 + R7 偏差 + §12 后置效果指针）+ spec §10 全勾 + 泄漏自查零命中 + push（M · 依赖 T1-T6 终态）
 
 ## 非目标（不做，登记防漏）
 
