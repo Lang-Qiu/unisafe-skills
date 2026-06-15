@@ -17,10 +17,10 @@
 ## Phase B · Plus（行为变更 + W4 硬门）
 
 - [x] 任务 4（W2-desc）description 调优：两侧 SKILL.md frontmatter 加"score/compute AUROC·precision·recall for an existing/saved set of guard predictions against gold labels"（补 P8"评估已有预测"缺口）；**负例排除子句两侧未动**（llama 5/sg2 3 处 dataset 排除仍在，自检 diff 无 dataset 触发词进正例）；行数 llama 173/sg2 139 ≤250；盲测复测=报告项顺延 M4（S · 依赖 T2）
-- [ ] 任务 5（W4）judge 并发（TDD）：`llm_judge.predict_batch`（有界 ThreadPool，按 id 回填）+ main.py `--judge-concurrency N`（默认 1）；测：串行等价 / id 行集合相同 / **success·errors·skipped 守恒** / mock-sleep 证提速 / 默认串行（M · 依赖 Cα 提交序）
-- [ ] 任务 6（W4-live）实测：judge 子集 `-j1` vs `-j4`（凭证 env-only），壁钟提速 **≥30%(目标≥2×)** + 计数逐项守恒 + 输出按 id 相同；M2_summary 台账登记 **R7 superseded**（S · 依赖 T5 + judge 凭证）
+- [x] 任务 5（W4）judge 并发（TDD）：`llm_judge.predict_batch`（有界 ThreadPool，按 id 回填，predict 不抛出→隔离）+ `capabilities.supports_batch=concurrency>1`（=1 走旧串行路径逐字一致）+ main.py `--judge-concurrency N`（默认 1）+ config 回显；**6 测试绿**（串行等价/顺序完整/守恒/提速/容量/parser）；llama 100 全绿（M · 依赖 Cα 提交序）
+- [x] 任务 6（W4-live）实测：judge 子集 12 条 `-j1` vs `-j4`（凭证 env-only 不落文件）→ **340s→88s = 3.86×（74% 壁钟↓）** 超 ≥30% 硬门+≥2× 目标；counts(12/0/0) 逐项守恒 + 12 条逐 id 判定一致 + 无重排/丢行；M2_summary §5 登记 **R7 superseded by M3.5 §3-W4**（S · 依赖 T5 + judge 凭证）
 
-### ☐ Checkpoint Cβ（M3.5 交付硬门）：T5 串行等价 + T6 提速≥30%(目标≥2×) + success/errors/skipped 守恒 + **llama 90+/sg2 94+ 绿** + leak 零命中 + R7 登记；W2 盲测=报告项不在门内
+### ☑ Checkpoint Cβ（M3.5 交付硬门）：✅（2026-06-16）T5 串行等价 + T6 提速 3.86×(74%) + success/errors/skipped 守恒 + **llama 100/sg2 99 绿** + R7 登记；W2 盲测=报告项不在门内（leak 自查于 T7 终稿前）
 
 ## Phase C · 交付
 

@@ -60,16 +60,35 @@ class LLMJudgeGuard(GuardAdapter):
                            or DEFAULT_JUDGE_MODEL)
         self.version = self.model
         self.max_tokens: int = int(config.get("judge_max_tokens") or MAX_TOKENS)
+        # W4: bounded concurrency. 1 = serial (supports_batch False -> main.py runs
+        # the historical one-at-a-time path, byte-identical output).
+        self.concurrency: int = max(1, int(config.get("judge_concurrency") or 1))
         self._canonical: List[str] = list(
             load_category_mapping().get("canonical_categories") or [])
 
     @property
     def capabilities(self) -> Dict[str, Any]:
         return {
-            "supports_batch": False,
+            "supports_batch": self.concurrency > 1,  # W4: only batch when concurrent
             "returns_confidence": True,
             "modalities": list(self.modality),
         }
+
+    def predict_batch(self, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """W4: run predict() over the chunk with bounded concurrency, results returned
+        in INPUT order (no reorder/dup/drop). predict() never raises (it returns
+        error rows), so per-record isolation and counts are identical to serial."""
+        workers = max(1, min(self.concurrency, len(records)))
+        if workers == 1:
+            return [self.predict(record) for record in records]
+        from concurrent.futures import ThreadPoolExecutor
+
+        results: List[Optional[Dict[str, Any]]] = [None] * len(records)
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            index_of = {pool.submit(self.predict, rec): i for i, rec in enumerate(records)}
+            for future, i in index_of.items():
+                results[i] = future.result()  # predict() swallows its own exceptions
+        return results  # type: ignore[return-value]
 
     @staticmethod
     def _credentials() -> Tuple[Optional[str], Optional[str]]:

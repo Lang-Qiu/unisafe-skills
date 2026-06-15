@@ -80,7 +80,7 @@ rule 无连续分 → 正确判 not-calibratable。图像侧 shieldgemma2 校准
 2. **confidence 方向映射**（spec §5 未明说方向，M0 §5 隐含 unsafe 方向）：judge 自报分对 safe 判定取 `1−c` 后入库；原始自报值保留在 `raw_output.parsed`。
 3. **M1 响亮拒绝测试退役**：两旗标实现后该测试断言对象消失（spec §3 明令"替换响亮拒绝"）；行为改由 `TestByCategory`/`TestAdversarialSplit` 锁定，io-contract §7 措辞已历史化。
 4. judge 对抗面：判官有指令遵循面，对抗样本可能"说服"其在合法 JSON 里给错判——**真数据量化坐实**（§2.2）：judge AUROC 非对抗 0.976 → 对抗 **0.633**（坍塌 0.34，三 guard 中最脆；llama 仅降 0.19）。这是判官范式相对专用 guard 的结构性弱点，非实现 bug。
-5. 全量 judge 延迟（22.5 s/条）使三 Guard 全量在单机串行下不现实；partial 规则与 `--resume` 是既定路径，**不引入并发**（Ask-first，见 plan R7）。
+5. ~~全量 judge 延迟（22.5 s/条）…**不引入并发**（Ask-first，见 plan R7）~~ → **R7 superseded by M3.5 §3-W4**（用户 2026-06-16 显式授权）：`--judge-concurrency N`（默认 1=串行向后兼容）加有界并发；实测 12 条 `-j4` vs `-j1` = **340s→88s（3.86× / 74% 壁钟↓）**，counts(predicted/errors/skipped) 守恒、逐 id 判定一致、无重排/丢行（M3.5 T5/T6）。全量 judge 由此可脱离 partial。
 
 ## 6. Extension Backlog（更新）
 

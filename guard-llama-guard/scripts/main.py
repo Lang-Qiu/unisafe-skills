@@ -58,6 +58,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--judge-model", default=None,
                         help="model id for the llm-judge guard (fallback: LLM_JUDGE_MODEL "
                              "env, then the adapter default)")
+    parser.add_argument("--judge-concurrency", type=int, default=1,
+                        help="W4: bounded parallel requests for the llm-judge guard "
+                             "(default 1 = serial; effective concurrency is "
+                             "min(this, --batch-size))")
     parser.add_argument("--hf-token", default=None, help="HF token (never persisted; redacted in run_metadata)")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--resume", action="store_true",
@@ -189,6 +193,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                 "batch_size": args.batch_size,
                 "model_id": args.model_id,
                 "judge_model": args.judge_model,
+                "judge_concurrency": args.judge_concurrency,  # W4
                 "hf_token": args.hf_token,
                 "seed": args.seed,
             }
@@ -274,6 +279,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             "batch_size": args.batch_size,
             "model_id": args.model_id,
             "judge_model": args.judge_model,
+            "judge_concurrency": args.judge_concurrency,
             "hf_token": "<redacted>" if args.hf_token else None,
             "seed": args.seed,
             "resume": args.resume,
