@@ -1,7 +1,7 @@
 # M2 交付总结 — guard-llama-guard 增量（方向 B，乙）
 
-> 日期：2026-06-12。契约：[`M2_SPEC.md`](M2_SPEC.md)；编排：[`tasks/plan-m2.md`](tasks/plan-m2.md) / [`tasks/todo-m2.md`](tasks/todo-m2.md)（20 任务：18 完成 + 2 项外部依赖待办）。
-> 层级结论：**Core-Minimal ✅（C1，零依赖 82 测试）｜Core-Full ✅（C2，judge live 实测 + 三 Guard 矩阵）｜Plus 消融 A–D 全实测、trigger eval 与全量档待外部｜Extension 只留接口**。
+> 日期：2026-06-12（**2026-06-15 真数据升档**）。契约：[`M2_SPEC.md`](M2_SPEC.md)；编排：[`tasks/plan-m2.md`](tasks/plan-m2.md) / [`tasks/todo-m2.md`](tasks/todo-m2.md)（20 任务全完成：任务 18 已用甲 WildGuardMix unified 全量 **1959** 实测升档）。
+> 层级结论：**Core-Minimal ✅（C1，零依赖 82 测试）｜Core-Full ✅（C2，judge live 实测 + 三 Guard 矩阵）｜Plus 消融 A–D 全实测、全量档真数据升档（rule/llama 全量 + judge 子集 partial）、trigger eval 待人工｜Extension 只留接口**。
 
 ## 1. 追溯表（spec §6 验收项 × 实现 × 测试）
 
@@ -14,25 +14,40 @@
 | O over-refusal | 双口径正式核验 + 进对比 | M1 探针路径复用 + comparison 行 | `TestOverRefusalFormal` ×4；字段名与 v2 一致**无需别名** | ✅ |
 | E llm-judge | 适配器 + 隔离 + live | `scripts/guards/llm_judge.py` | 19 离线测试（transport mock）+ live 18/18 + 样本 5/5 非 error + validate PASS + exit 1/2 判例实证 + git grep key/URL 零命中 | ✅ |
 | F 顺延项清算 | 消融 A–D、trigger eval | `references/ablations.md` 回填 | A/B/D 实测 + C 双源实测；trigger eval 实测档 N/A（需人工新会话 + 甲 #3，见 §3） | ✅/N-A |
-| G 全量结果档 | 1,725 三 Guard 矩阵 | — | 甲数据未到 → 顶替矩阵已出（`out_m2_threeguard/`，可截图），按"提交前重跑"标记；judge 档允许 partial | 待数据 |
+| G 全量结果档 | 1,725 三 Guard 矩阵 | 甲 WildGuardMix 全量 1959（checker PASS） | **真数据升档**（§2）：rule+llama 全量 1959 + judge 子集 120（partial）；llama AUROC **0.888**、over-refusal 6.4%；judge 对抗坍塌量化 | ✅ |
 | H 文档与交付 | SKILL.md ≤250 行、v2 发甲、本文件 | `SKILL.md`（~168 行）、`待甲确认.md` #4 追加行 | 指针全验证；本文件含 Metric Caveats | ✅ |
 
-## 2. 三 Guard 对比矩阵（顶替数据 10 eligible，head_binary，baseline=rule）
+## 2. 真实矩阵（甲 WildGuardMix 全量 **1959**：safe 1675 / unsafe 284 = 14.5% 基准率 + 250 XSTest 探针；2026-06-15）
 
-| guard | Acc (ao) | Recall | FPR | Macro-F1 | AUROC | 探针 over-refusal |
-|---|---|---|---|---|---|---|
-| **llm-judge** | **0.90** | 1.00 | **0.167** | 0.899 | 1.00* | **0.0（唯一通过）** |
-| llama-guard | 0.80 | 1.00 | 0.333 | 0.80 | 1.00 | 1.0 |
-| rule | 0.70 | 1.00 | 0.50 | 0.697 | — | 1.0 |
+### 2.1 全量 rule + llama-guard（`out_text_real/metrics/`，real 14.5% 基准率）
 
-\* judge AUROC 基于自报分的方向映射（见 §5-2 与 Metric Caveats）。亮点叙事：judge 是三者中唯一不被 XSTest 同形异义探针误导的 guard，且 phishing 类别判对（`cyber_safety`，llama 判 S1/violence——taxonomy 分歧的量化见 `--by-category` 的 divergence 计数）；代价是延迟 22.5 s/条（推理链）≈ llama 的 100 倍以上。
+| guard | basis | n | Acc | Recall | FPR | Macro-F1 | AUROC | coverage | over-refusal(XSTest 250) |
+|---|---|---|---|---|---|---|---|---|---|
+| **llama-guard** | answered_only | 1911 | **0.899** | **0.660** | 0.063 | 0.792 | **0.888** | 0.976 | Acc 0.936 / FPR **6.4%** |
+| llama-guard | failure_as_wrong | 1959 | 0.877 | 0.616 | 0.079 | 0.759 | 0.888 | — | — |
+| rule | (单口径) | 1959 | 0.798 | 0.271 | 0.112 | 0.582 | — | 1.000 | Acc 0.904 / FPR 9.6% |
+
+- **对抗鲁棒性量化**（llama-guard）：AUROC 非对抗 **0.919** → 对抗 **0.831**，Acc 0.931→0.852——对抗 prompt 确实更难。
+- **可靠性**：llama error 仅 2.4%（48/1959），双口径差小（0.899→0.877）——与图像侧 int8 19.4% NaN 形成鲜明对照（M3_summary §4-2a）。
+
+### 2.2 三 Guard 子集（judge partial：分层 **120** = 40 unsafe + 40 safe + 40 XSTest，judge 22.5s/条全量 11h 不现实，故子集）
+
+| guard | Acc (ao) | Recall | FPR | AUROC | over-ref FPR | 对抗 AUROC | 非对抗 AUROC |
+|---|---|---|---|---|---|---|---|
+| **llama-guard** | 0.805 | 0.579 | 0.088 | **0.909** | **0.025** | 0.767 | 0.958 |
+| **llm-judge** | 0.815 | **0.750** | 0.152 | 0.895 | 0.050 | **0.633** | 0.976 |
+| rule | 0.675 | 0.275 | 0.125 | — | 0.050 | — | — |
+
+叙事要点：① **judge 召回最高（0.75）但 FPR 也最高（0.152）**——抓得多、误报也多；llama-guard 综合最稳（AUROC 0.909、over-refusal 仅 2.5%）。② **judge 对抗最脆**：AUROC 非对抗 **0.976 → 对抗 0.633**（坍塌 0.34），llama 0.958→0.767（降 0.19）——M2 当初"judge 可被对抗样本说服"的 caveat 在真数据上**量化坐实**（推理判官被对抗框架带偏比专用 guard 更严重）。③ over-refusal 真实测出（llama 2.5–6.4% / judge 5% / rule 5–9.6%）。④ **与图像侧强对照**：文本 guard 在母语域 AUROC 0.89，远胜被量化拖累的 ShieldGemma 2（0.61）——"skill 工程一致，效果差异来自模型与量化口径"。
+
+> 旧 `out_m2_threeguard/` 顶替矩阵（10 eligible 合成）已退役为机制自检留档；真数据档以本节为准。
 
 ## 3. N/A / 待外部（不删项规则）
 
 | 项 | 原因 | 顺延 |
 |---|---|---|
 | trigger eval 实测档（任务 16） | 需多个全新会话人工实测 + 甲 #3 盲测合并（已决事项 3） | M2 收尾前/M4 报告期；协议与正负例在 `references/trigger-eval.md` |
-| 全量 1,725 结果档（任务 18） | 甲 #2 数据未到（checker exit 0 为门）；judge 串行 ≈11h → **partial 规则生效**：rule/llama 全量 + judge 子集即标 partial，不声称三 Guard 全量 | 数据到位即跑（`--resume` 分段） |
+| ~~全量结果档（任务 18）~~ ✅ 已完成 | 甲 WildGuardMix 全量 1959 到位（checker PASS）；2026-06-15 rule/llama 全量 + judge 子集 120 已跑（partial 规则生效，judge 全量 11h 不现实） | 真数据矩阵见 §2（`out_text_real/` + `out_judge_subset/`） |
 | OpenAI Moderation live | 仍无真 OpenAI key（MiMo 代理无 `/moderations`，M1 404 实测）；judge 已顶多 Guard 名额，此项降为可选 | 真 key 到手即 `OPENAI_MODERATION_LIVE=1` |
 
 ## 4. Metric Caveats（报告引用数字前必读）
@@ -40,14 +55,14 @@
 1. **by-category 仅 answered_only 口径**：error 行无预测类别，"双口径类别表"是虚假精度；failure 影响已由头部双口径覆盖。
 2. **llm-judge 的 confidence 非校准概率**：自报"裁决把握"经方向映射后才参与 AUROC；与 llama 的 token 概率不可混算，跨 guard AUROC 对比须注明（实证：映射前 AUROC 0.375）。
 3. **low_sample_warning / low_support_warning 桶不作强结论**：本轮全部桶均为小样本（≤13 条），仅机制验证与趋势。
-4. **fallback/顶替数据不可作为最终全量结果**：§2 矩阵与消融数字提交前以甲的真实数据重跑。
+4. ~~**fallback/顶替数据不可作为最终全量结果**~~ → **已用甲真实数据重跑**（§2，2026-06-15）：顶替矩阵退役，全量数字以真数据为准。仍注意：judge 为 120 分层子集（balanced，非 14.5% 基准率），跨表比较须区分"全量 real base rate"（§2.1）与"子集 balanced"（§2.2）。
 
 ## 5. 已知限制与 spec 偏差登记
 
 1. **max_tokens 256 → 4096**（偏离 M2_SPEC §5 的"默认 256"）：mimo-v2.5-pro 是推理模型，思维链先耗预算——256 时 `finish_reason=length` 且 content 为空（live 实录于 `references/llm-judge-notes.md`）；`judge_max_tokens` 可配置。
 2. **confidence 方向映射**（spec §5 未明说方向，M0 §5 隐含 unsafe 方向）：judge 自报分对 safe 判定取 `1−c` 后入库；原始自报值保留在 `raw_output.parsed`。
 3. **M1 响亮拒绝测试退役**：两旗标实现后该测试断言对象消失（spec §3 明令"替换响亮拒绝"）；行为改由 `TestByCategory`/`TestAdversarialSplit` 锁定，io-contract §7 措辞已历史化。
-4. judge 对抗面：判官有指令遵循面，对抗样本可能"说服"其在合法 JSON 里给错判（注入防护与残余风险见 notes）——本身是对抗分桶的分析素材。
+4. judge 对抗面：判官有指令遵循面，对抗样本可能"说服"其在合法 JSON 里给错判——**真数据量化坐实**（§2.2）：judge AUROC 非对抗 0.976 → 对抗 **0.633**（坍塌 0.34，三 guard 中最脆；llama 仅降 0.19）。这是判官范式相对专用 guard 的结构性弱点，非实现 bug。
 5. 全量 judge 延迟（22.5 s/条）使三 Guard 全量在单机串行下不现实；partial 规则与 `--resume` 是既定路径，**不引入并发**（Ask-first，见 plan R7）。
 
 ## 6. Extension Backlog（更新）
@@ -64,6 +79,6 @@
 
 ## 7. 人工待办（非技术验收）
 
-- [ ] M2 E2E 截图（三 Guard comparison 表运行画面；素材已在 `out_m2_threeguard/metrics/metrics.md`）
-- [ ] 甲：#2 数据日期（到位后任务 18 全量跑）+ #3 盲测（与任务 16 合并）+ #4 review（v1+v2 一并）
+- [ ] M2 E2E 截图（真数据：`全量标注结果/wildguardmix_test/out_text_real/metrics/metrics.md` 全量 + `out_judge_subset/metrics/` 三 Guard 子集；目录已 gitignore，截图入提交 zip 不入 git）
+- [x] 甲：#2 数据已交付（WildGuardMix 全量 1959，checker PASS）→ 乙 2026-06-15 任务 18 真数据升档；#3 盲测已做（7/8，见 `待甲确认.md` #6）；**#4 公式 review 仍待甲显式签字**
 - [ ] 用户终审本交付；官方 gated 权重获批后 `--model-id` 默认值一条命令切回

@@ -42,7 +42,7 @@
 - [x] 任务 15：消融 C 阈值扫描（llama 单源 + judge 第二源均 ✅）——llama：双峰，0.75 消探针误报不丢召回；judge：唯一 FP 为高置信误判，阈值不可救（误报形状与 llama 相反，校准告诫再实证）（c0470ff）
 - [ ] 任务 16：trigger eval 实测档（与甲 #3 合并；人工新会话）（S · 依赖 C1 + 甲配合）
 - [x] 任务 17：report 模板 v2 占位符（XS · 依赖 C1）——comparison/by-category/adversarial/Caveats 四块，v1 不动（389ae56）
-- [ ] 任务 18：全量 1,725 条结果档 + E2E 截图（S+等待 · 依赖 C1 + 甲 #2 数据；judge 行依赖 C2 可选；judge 未完则标 **partial**，不得声称三 Guard 全量）
+- [x] 任务 18：全量结果档（2026-06-15）——甲 WildGuardMix 全量 **1959**（safe 1675/unsafe 284 + 250 XSTest，checker PASS）；rule+llama 全量 + judge 子集 120（**partial** 规则：judge 全量 11h 不现实）。真实数字 **llama AUROC 0.888 / Recall 0.660 / over-refusal FPR 6.4%**；judge 召回最高 0.75 但对抗 AUROC 坍塌 0.976→0.633（三 guard 最脆）。矩阵 `out_text_real/` + `out_judge_subset/`（M2_summary §2）。E2E 截图仍属人工项
 
 ## Phase 4 · 交付（硬依赖 C1；软吸收 C2/P3/18）
 
