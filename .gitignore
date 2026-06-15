@@ -2,6 +2,7 @@
 InfoSec-example-skills/
 作业说明/
 .claude/
+.agents/
 
 # ---- 数据集 / 输出产物（体量大，不入库；从原始来源获取）----
 data/
@@ -12,6 +13,8 @@ out*/
 raw/
 normalized/
 unified/
+# 甲私发的真实 UnsafeBench/WildGuardMix 全量数据 + guard 运行产物（真数据派生物，整目录不入库）
+全量标注结果/
 *.parquet
 *.arrow
 

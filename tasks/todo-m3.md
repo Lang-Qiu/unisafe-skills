@@ -40,7 +40,7 @@
 - [x] 任务 14：量化消融（int8 vs CPU bf16 全 5 图；4-bit=NaN 档）+ 阈值扫描 → notes §6（S · GPU · 依赖 13）——**重大发现：int8 在极端值合成图上漂移最大 0.710、翻转 2/5 判定（white/checker），任务 13 的"棋盘格 OOD FP"改判为量化伪影（CPU 参考五图全 safe）**；CPU 74s/图 → 真数据档 partial 规则（int8 全量 + CPU 子集对照）；阈值 0.9 才压掉伪影但属对伪影校准——"阈值旋钮救不了量化噪声"与 M2 阈值叙事成三方对照
 - [x] 任务 15：trigger eval 图文互斥档（S · 人工 · 依赖 C1）——正例 5 + 负例 7（与文本/数据集侧互斥）+ 协议与通过线落库；实测档 N/A(人工新会话；与 M2 任务 16、甲 #3 同轮 → M4 前)
 - [x] 任务 16：report 模板图像章节 + Metric Caveats 占位（XS · 依赖 C1）——comparison/by-category 分歧/阈值/量化四块 + 状态机占位 + Caveats 四条
-- [ ] 任务 17：真实 UnsafeBench 200–500 张档 + E2E 截图（S+等待 · 依赖甲 `dataset-unsafebench` 实现 + checker exit 0；**当前 fallback_only**：双 guard 合成矩阵已出 `out_m3_twoguard/`；到位后 int8 全量 + CPU bf16 子集对照升档；M0 样本 AD-9 实测并入本档）
+- [x] 任务 17：真实 UnsafeBench 全量档（2026-06-15）——甲全量 **2037**（safe 1260/unsafe 777，checker PASS）；int8 全量双 guard + CPU bf16 18 图对照已跑；升档 **`partial_shieldgemma2`**（`out_m3_real/metrics/`）。**核心发现：int8 真图 NaN 19.4% + 非-NaN 子集 3/6 翻转 → 量化退化下界、CPU 归因坐实伪影**（M3_summary §2/§4-2a、notes §6.1a）。E2E 截图仍属人工项（素材：`out_m3_real/metrics/metrics.md`）
 
 ## Phase 4 · 交付（硬依赖 C0a + C1；软吸收 C2/P3/17）
 
