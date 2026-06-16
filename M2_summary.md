@@ -29,6 +29,7 @@
 
 - **对抗鲁棒性量化**（llama-guard）：AUROC 非对抗 **0.919** → 对抗 **0.831**，Acc 0.931→0.852——对抗 prompt 确实更难。
 - **可靠性**：llama error 仅 2.4%（48/1959），双口径差小（0.899→0.877）——与图像侧 int8 19.4% NaN 形成鲜明对照（M3_summary §4-2a）。
+- **口径提示（M2 本表 = native argmax，出厂默认在 M3.6 已改）**：本表数字（FPR 6.3% / over-refusal 6.4%）是 M2 当时的原生 argmax 行为；M3.6 E1 把 llama 出厂默认改为阈值 0.55 后，FPR→**5.6%**、over-refusal→**6.0%**（降误报/过拒，换约 3% 召回）。**报告引用以 `M3.6_summary.md` §2.0 统一战绩表为准**。
 
 ### 2.2 三 Guard 子集（judge partial：分层 **120** = 40 unsafe + 40 safe + 40 XSTest，judge 22.5s/条全量 11h 不现实，故子集）
 
