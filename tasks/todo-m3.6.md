@@ -17,11 +17,11 @@
 
 - [x] 任务 5（E2 spike）：隔离 `pytorch_dl_26`（**torch 2.6.0+cu124 + transformers 4.57.1 + bnb 0.49.2**，正是 M3 当年被 torch 2.5 卡住的 4.57）；N=20 probe（12 旧 NaN + 8 ok，覆盖 safe/violence/sexual/general_harm）三向对照。**结论 `not_fixed`**：NaN 60%→35%（5/12 恢复）、coverage 40%→65%，但存活 int8 分与 CPU **仅 31% 一致、drift 0.67**——伪影未解、int8 仍不可信。落 notes §6.1c。**主 env 零污染**（torch 2.5.1/4.51.3 未动，sg2 100/llama 105 绿）。env 隔离踩坑(user-site 串扰 + pip clobber cu124→cpu)已解（M · 依赖无）
 
-### ☐ Checkpoint Cγ（M3.6 交付门）：E1 sweep+flip+默认=maxF1+before→after+`--threshold 0.5`复现+caveats入档+黄金重锁+套件绿；E2 固定probe+四项alignment+三选一结论；leak净
+### ☑ Checkpoint Cγ（M3.6 交付门）：✅（2026-06-16）E1 sweep+flip+默认(llama 0.55/sg2 0.30)+before→after+`--threshold 0.5`复现+caveats入档+黄金未翻+套件绿；E2 固定 N=20 probe+四项 alignment+`not_fixed`结论；leak 净
 
 ## Phase C · 交付
 
-- [ ] 任务 6：两侧 `references/best-known-config.md`（§3B YAML）+ `root/M3.6_summary.md`（before→after + flip + E2 结论 + **仍存结构上限定位**）+ `.gitignore` 加 `reports/` + spec §10 全勾 + 泄漏自查 + push（M · 依赖 T1-T5 终态）
+- [x] 任务 6：两侧 `references/best-known-config.md`（§3B YAML）+ `root/M3.6_summary.md`（E1 before→after + flip + E2 not_fixed 结论 + **结构上限定位**：三策略天花板/judge 对抗/int8 伪影均未解）+ `.gitignore` 加 `reports/`（T4 已落）+ spec §10 全勾 + 泄漏自查 + push（M · 依赖 T1-T5 终态）
 
 ## 开放问题（✅ 已解决 2026-06-16）
 
