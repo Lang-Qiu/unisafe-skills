@@ -19,10 +19,10 @@
 | 套件 | 结果（2026-06-16） |
 |---|---|
 | `guard-llama-guard` | **Ran 105 — OK**（skipped=2） |
-| `guard-shieldgemma2` | **Ran 100 — OK**（skipped=2） |
+| `guard-shieldgemma2` | **Ran 110 — OK**（skipped=2） |
 
 - 2 个 skip = LIVE-gated opt-in（如 `SHIELDGEMMA2_LIVE=1` 才跑的方差 smoke）；默认跳过，非失败。
-- 无回归，匹配 M3.6 收口宣称的 105 / 100。
+- 无回归，当前主线为 `guard-llama-guard` 105 / `guard-shieldgemma2` 110。
 
 ## 2. 干净 clone 离线全链复现（3b）
 
@@ -32,7 +32,7 @@
 git clone -q <repo-or-origin> /tmp/freshclone           # gitignored 真数据/reports 不进 clone
 # 1) 套件在干净 checkout 复现
 ( cd guard-llama-guard  && <py> -m unittest discover -s tests -p "test_*.py" )   # 105 OK (skip 2)
-( cd guard-shieldgemma2 && <py> -m unittest discover -s tests -p "test_*.py" )   # 100 OK (skip 2)
+( cd guard-shieldgemma2 && <py> -m unittest discover -s tests -p "test_*.py" )   # 110 OK (skip 2)
 # 2) rule-only 离线预测（纯 stdlib，无模型无网络）
 <py> scripts/main.py --input examples/input.sample.jsonl --guards rule \
       --output-dir /tmp/out_smoke --device cpu
@@ -43,7 +43,17 @@ git clone -q <repo-or-origin> /tmp/freshclone           # gitignored 真数据/r
 #   -> wrote metrics.json + metrics.md ; RESULT: ok guards=1 joined=5
 ```
 
-**结论**：干净 clone 即可复现 ① 两侧单测、② `rule` guard 端到端「预测 → 评分」离线全链（fixture/example 级）。
+Dataset skill 的离线层也可复现（不联网、不读真数据）：
+
+```bash
+( cd dataset-wildguardmix && <py> -m unittest discover -s tests -p "test_*.py" )  # 5 OK
+( cd dataset-unsafebench  && <py> -m unittest discover -s tests -p "test_*.py" )  # 4 OK
+<py> .agents/skills/dataset-format-checker/scripts/check_dataset_format.py dataset-wildguardmix/examples/wildguardmix_unified_sample.jsonl
+<py> .agents/skills/dataset-format-checker/scripts/check_dataset_format.py dataset-unsafebench/examples/unsafebench_output_sample.jsonl
+# both -> RESULT: PASS
+```
+
+**结论**：干净 clone 即可复现 ① 四个 skill 的离线单测、② `rule` guard 端到端「预测 → 评分」离线全链、③ 两个 Dataset 样例的 checker PASS（fixture/example 级）。
 
 ## 3. 锚点覆盖自检（trigger-eval 佐证，**非真触发结果**）
 

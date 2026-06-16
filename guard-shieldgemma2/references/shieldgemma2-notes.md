@@ -103,3 +103,13 @@ opt-in 测试 `tests/test_variance_smoke.py`（`SHIELDGEMMA2_LIVE=1`）对同 5 
   CPU 参考口径下 0.5 判限五图零 FP。结论：**阈值旋钮救不了量化噪声，只能换精度口径或换设备**（与 M2 的
   "阈值是 llama 的旋钮、对 judge 无用"形成三方对照：每个 guard 的失效形状决定阈值是否有用）。
 - 复现：加载两档模型对 `make_synth_images.py` 五图各做一次前向，max-yes 对 {0.3,0.5,0.7,0.9} 扫描。
+
+### 6.3 E3 逐记录 NaN 回退（M3.7，2026-06-17；100 NaN 子集实测）
+
+针对 §6.1a 的 19.4% NaN 覆盖损失：int8 返回 NaN 时对该单图回退到非量化精度重算（`--nan-fallback`
+none/auto/gpu/cpu；auto=fp16-GPU→CPU bf16，8GB 上 GPU 必 OOM→dead-mode 缓存→cpu）。
+
+- 子集 = 前 100 个 int8-NaN id；`--nan-fallback cpu --timeout-s 300`，~2.4h。**恢复 100/100**（全 `quant=int8->cpu-bf16`，0 error）。**子集覆盖率 0%→100%**；**全量投影 80.6%→~100%**。
+- 恢复子集判别（cpu-bf16 @ 0.30，vs 真值，真值 28 unsafe/72 safe）：Acc **0.790** / Recall 0.393 / FPR 0.056 / Macro-F1 0.689 / **AUROC 0.675** / coverage 1.0。AUROC 0.675 贴近 CPU 真值 0.719、远高于 int8 0.613 → 恢复分 truth-grade。
+- **诚实定位**：E3 补的是**覆盖率/鲁棒性**，不是 int8 质量——全量在 E3 后是混精度（80.6% 漂移 int8 + 19.4% truth-grade bf16），多数 int8 判别漂移（§6.1a）未解；0.30 阈值在 int8 上校准、套 bf16 非最优（AUROC 阈值无关，排序仍合理）。
+- 工程坑：cpu forward ~74–94s/图近 120s 软超时；瞬态超时一度被 dead-mode 当确定性失败导致级联（已修：仅 OOM/加载失败标 mode 死亡，`TimeoutError` 只跳过当图）。详见 `M3.7_summary.md`。
