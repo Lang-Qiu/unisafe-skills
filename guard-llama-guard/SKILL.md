@@ -108,10 +108,12 @@ metrics.json also carries a `comparison` pivot (delta vs `--baseline`, default r
 5. Run `scripts/metrics.py` (add `--by-category --adversarial-split` for the M2
    analyses); deliver `metrics/metrics.md` to the user.
 6. *(optional)* Run `scripts/calibrate.py --predictions <out>/predictions --dataset
-   <input> --output-dir <out>/calibration` to pick a threshold instead of the fixed
-   0.5: it sweeps the ROC curve and recommends `max_macro_f1` / `recall_at_fpr_budget`
-   operating points (guards without a continuous score, e.g. `rule`, are reported as
-   not-calibratable). Real-data finding: this beats OR-ensembling a weak guard.
+   <input> --output-dir <out>/calibration` to re-pick a threshold: it sweeps the ROC
+   curve and recommends `max_macro_f1` / `recall_at_fpr_budget` operating points
+   (guards without a continuous score, e.g. `rule`, are reported as not-calibratable).
+   Real-data finding: this beats OR-ensembling a weak guard. **llama-guard's verdict
+   threshold defaults to 0.55** (M3.6 E1 `max_macro_f1`; natively argmax≈0.5) — pass
+   `--threshold 0.5` for the old argmax behavior; see `references/calibration-notes.md`.
 
 ## Failure handling
 

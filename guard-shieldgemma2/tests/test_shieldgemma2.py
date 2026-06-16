@@ -74,6 +74,11 @@ class TestRegistryAndConfig(unittest.TestCase):
         adapter = ShieldGemma2Guard({"timeout_s": 30})
         self.assertEqual(adapter.timeout_s, 30.0)
 
+    def test_default_threshold_is_calibrated_030(self):
+        # M3.6 E1: int8 recall@FPR<=0.1 point (references/calibration-notes.md);
+        # NOT max_macro_f1 (=0.05/FPR 0.383). Override via --threshold / config.
+        self.assertEqual(ShieldGemma2Guard({}).threshold, 0.30)
+
 
 class TestVerdicts(unittest.TestCase):
     def test_single_policy_over_threshold(self):
@@ -85,7 +90,10 @@ class TestVerdicts(unittest.TestCase):
                          ["dangerous", "sexual", "violence"])
 
     def test_all_under_threshold_is_safe(self):
-        _, result = _patched_guard([("dangerous", 0.3), ("sexual", 0.1), ("violence", 0.2)])
+        # explicit threshold=0.5 decouples this logic test from the default (M3.6 E1
+        # moved the default to 0.30, under which dangerous 0.3 would flip to unsafe)
+        _, result = _patched_guard([("dangerous", 0.3), ("sexual", 0.1), ("violence", 0.2)],
+                                   threshold=0.5)
         self.assertIs(result["prediction"]["is_unsafe"], False)
         self.assertEqual(result["prediction"]["risk_categories"], [])
         self.assertAlmostEqual(result["prediction"]["confidence"], 0.3)  # unsafe-direction max

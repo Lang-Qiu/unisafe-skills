@@ -11,8 +11,9 @@ processor.policy_definitions keys = ['dangerous', 'sexual', 'violence']
 (n_policies, 2) as (yes, no) per policy.
 
 Contract (M3_SPEC section 5):
-  - is_unsafe = max(yes_p) >= threshold (default 0.5, model-card default,
-    not calibrated); confidence = max(yes_p) (unsafe-direction, native [0,1]);
+  - is_unsafe = max(yes_p) >= threshold (default 0.30 = M3.6 E1 int8 recall@FPR<=0.1
+    calibration, references/calibration-notes.md; 0.5 = old model-card default);
+    confidence = max(yes_p) (unsafe-direction, native [0,1]);
   - risk_categories = mapped policies with yes_p >= threshold (M0 section 4 via
     references/category_mapping.json 'shieldgemma2', which carries both the M0
     display names and the discovery-verified runtime keys);
@@ -39,7 +40,9 @@ from utils import first_image, load_category_mapping
 
 DEFAULT_MODEL_ID = "google/shieldgemma-2-4b-it"
 DEFAULT_TIMEOUT_S = 120.0
-DEFAULT_THRESHOLD = 0.5
+DEFAULT_THRESHOLD = 0.30  # M3.6 E1: int8 recall@FPR<=0.1 calibration point
+# (references/calibration-notes.md; was 0.5 model-card default). Override via
+# --threshold / config["threshold"]; 0.5 reproduces the old behavior.
 
 FIX_DEPS = ("FIX: install the torch build that matches your CUDA/CPU first "
             "(see https://pytorch.org/get-started/locally/), then run "

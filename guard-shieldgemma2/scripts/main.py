@@ -82,9 +82,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--retries", type=int, default=1)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--model-id", default=DEFAULT_MODEL_ID)
-    parser.add_argument("--threshold", type=float, default=0.5,
+    parser.add_argument("--threshold", type=float, default=None,
                         help="shieldgemma2 unsafe cut on max per-policy yes-probability "
-                             "(model-card default 0.5, not calibrated on this dataset)")
+                             "(default: adapter 0.30 = M3.6 E1 int8 recall@FPR<=0.1 "
+                             "calibration; pass 0.5 to reproduce the old model-card default)")
     parser.add_argument("--hf-token", default=None, help="HF token (never persisted; redacted in run_metadata)")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--resume", action="store_true",
