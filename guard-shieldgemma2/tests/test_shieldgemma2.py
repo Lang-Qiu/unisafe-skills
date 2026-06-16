@@ -294,6 +294,51 @@ class TestUnknownPolicyWarningLanding(unittest.TestCase):
             # however many records it appears on (5 predictable records here)
             self.assertEqual(metadata["warnings"]["unknown_policy_count"], 1)
 
+    def test_run_metadata_gets_nan_fallback_recovered(self):
+        # E3: --nan-fallback cpu, every int8 forward NaN, fallback valid ->
+        # all 5 predictable records recovered, surfaced in run_metadata.warnings
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+
+            def nan_probs(self, image):
+                return [("dangerous", float("nan")), ("violence", float("nan"))]
+
+            def fb(self, image, mode):
+                return [("dangerous", 0.1), ("violence", 0.9)]
+
+            with _fake_runtime_deps(), \
+                 mock.patch.object(ShieldGemma2Guard, "_ensure_loaded", lambda self: None), \
+                 mock.patch.object(ShieldGemma2Guard, "_load_image", lambda self, r: object()), \
+                 mock.patch.object(ShieldGemma2Guard, "_forward_probs", nan_probs), \
+                 mock.patch.object(ShieldGemma2Guard, "_fallback_forward", fb), \
+                 contextlib.redirect_stdout(io.StringIO()):
+                code = main_module.main([
+                    "--input", str(FIXTURE), "--output-dir", str(out),
+                    "--guards", "shieldgemma2", "--nan-fallback", "cpu"])
+            self.assertEqual(code, 0)
+            metadata = json.loads((out / "run_metadata.json").read_text(encoding="utf-8"))
+            self.assertEqual(metadata["warnings"]["nan_fallback_recovered"], 5)
+            self.assertEqual(metadata["config"]["nan_fallback"], "cpu")
+
+    def test_nan_fallback_none_leaves_no_warning_key(self):
+        # default none: NaN -> error rows, no recovery key in run_metadata.warnings
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+
+            def nan_probs(self, image):
+                return [("dangerous", float("nan")), ("violence", float("nan"))]
+
+            with _fake_runtime_deps(), \
+                 mock.patch.object(ShieldGemma2Guard, "_ensure_loaded", lambda self: None), \
+                 mock.patch.object(ShieldGemma2Guard, "_load_image", lambda self, r: object()), \
+                 mock.patch.object(ShieldGemma2Guard, "_forward_probs", nan_probs), \
+                 contextlib.redirect_stdout(io.StringIO()):
+                main_module.main([
+                    "--input", str(FIXTURE), "--output-dir", str(out),
+                    "--guards", "shieldgemma2"])
+            metadata = json.loads((out / "run_metadata.json").read_text(encoding="utf-8"))
+            self.assertNotIn("nan_fallback_recovered", metadata.get("warnings", {}))
+
 
 class TestLiveShieldGemma2(unittest.TestCase):
     """Opt-in live sanity (task 13): SHIELDGEMMA2_LIVE=1 + GPU + weights."""

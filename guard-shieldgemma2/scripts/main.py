@@ -86,6 +86,13 @@ def build_parser() -> argparse.ArgumentParser:
                         help="shieldgemma2 unsafe cut on max per-policy yes-probability "
                              "(default: adapter 0.30 = M3.6 E1 int8 recall@FPR<=0.1 "
                              "calibration; pass 0.5 to reproduce the old model-card default)")
+    parser.add_argument("--nan-fallback", default="none",
+                        choices=("none", "auto", "gpu", "cpu"),
+                        help="M3.7 E3: on int8 NaN, re-score that image on a non-quantized "
+                             "model to recover coverage. none (default) = old error-row "
+                             "behavior; auto = fp16-GPU then CPU bf16; gpu/cpu force one. "
+                             "Recovered scores are bf16/fp16 under the int8-calibrated "
+                             "threshold (recovers coverage, not int8 quality drift)")
     parser.add_argument("--hf-token", default=None, help="HF token (never persisted; redacted in run_metadata)")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--resume", action="store_true",
@@ -239,6 +246,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         resume_hits = 0
         resume_misses = 0
         unknown_policy_count = 0
+        nan_fallback_recovered = 0
 
         if not args.dry_run:
             unknown = [name for name in requested if name not in known_guards()]
@@ -258,6 +266,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                 "batch_size": args.batch_size,
                 "model_id": args.model_id,
                 "threshold": args.threshold,
+                "nan_fallback": args.nan_fallback,  # E3
                 "hf_token": args.hf_token,
                 "seed": args.seed,
             }
@@ -338,6 +347,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                             flush_buffer()
                     flush_buffer()
                 unknown_policy_count += getattr(adapter, "unknown_policy_count", 0)
+                nan_fallback_recovered += getattr(adapter, "nan_fallback_recovered", 0)  # E3
                 completed.append(name)
                 print(f"guard {name}: wrote {pred_path}")
 
@@ -372,6 +382,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             "batch_size": args.batch_size,
             "model_id": args.model_id,
             "threshold": args.threshold,
+            "nan_fallback": args.nan_fallback,  # E3
             "hf_token": "<redacted>" if args.hf_token else None,
             "seed": args.seed,
             "resume": args.resume,
@@ -385,6 +396,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         warnings["multi_image_records"] = multi_image_records
     if unknown_policy_count:
         warnings["unknown_policy_count"] = unknown_policy_count
+    if nan_fallback_recovered:  # E3: only present when >0 (AD-2 lineage)
+        warnings["nan_fallback_recovered"] = nan_fallback_recovered
     if warnings:  # only when non-empty (no empty placeholders, M2 AD-2 lineage)
         run_metadata["warnings"] = warnings
     with open(output_dir / "run_metadata.json", "w", encoding="utf-8", newline="\n") as fh:
