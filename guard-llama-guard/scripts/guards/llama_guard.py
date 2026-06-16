@@ -24,6 +24,10 @@ from guards.base import GuardAdapter
 from utils import load_category_mapping
 
 DEFAULT_MODEL_ID = "meta-llama/Llama-Guard-3-1B"
+# M3.6 E1: default verdict threshold on the normalized unsafe-prob. 0.55 = the
+# calibration max_macro_f1 point (references/calibration-notes.md); 0.5 is
+# argmax-equivalent. Override via --threshold / config["threshold"].
+DEFAULT_THRESHOLD = 0.55
 MAX_NEW_TOKENS = 24
 S_CODE_PATTERN = re.compile(r"S(\d{1,2})")
 
@@ -47,6 +51,8 @@ class LlamaGuard(GuardAdapter):
         self.timeout_s: float = float(config.get("timeout_s") or 30.0)
         self.retries: int = int(config.get("retries") if config.get("retries") is not None else 1)
         self.hf_token: Optional[str] = config.get("hf_token")
+        self.threshold: float = float(config.get("threshold")
+                                      if config.get("threshold") is not None else DEFAULT_THRESHOLD)
         self.model_revision: Optional[str] = None  # W1: resolved commit hash after load
         self._tokenizer = None
         self._model = None
@@ -172,6 +178,15 @@ class LlamaGuard(GuardAdapter):
             raise holder["error"]
         return holder["result"]
 
+    def _apply_threshold(self, argmax_unsafe: bool, confidence: Optional[float]) -> bool:
+        """M3.6 E1: is_unsafe = confidence >= threshold when a confidence is
+        available, else fall back to the native argmax verdict (robust when the
+        verdict-step prob couldn't be read). threshold=0.5 is argmax-equivalent
+        (argmax-unsafe iff normalized p_unsafe > 0.5)."""
+        if self.threshold is not None and confidence is not None:
+            return confidence >= self.threshold
+        return argmax_unsafe
+
     def _parse_one(self, token_ids, scores, batch_index: int, latency_ms: float,
                    record: Dict[str, Any]) -> Dict[str, Any]:
         import torch
@@ -207,6 +222,7 @@ class LlamaGuard(GuardAdapter):
                     confidence = p_unsafe / (p_safe + p_unsafe)
                 break
 
+        is_unsafe = self._apply_threshold(is_unsafe, confidence)  # M3.6 E1
         categories: List[str] = []
         for number in S_CODE_PATTERN.findall(text):
             for mapped in self._mapping.get(f"S{int(number)}", ["other"]):
