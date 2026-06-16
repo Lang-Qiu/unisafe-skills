@@ -76,6 +76,20 @@ opt-in 测试 `tests/test_variance_smoke.py`（`SHIELDGEMMA2_LIVE=1`）对同 5 
 - **flip_rate = 0.000、yes-prob 极差 = 0.000000、mean policy σ = 0.000000** → **int8 完全确定性**（同输入永远同输出）。
 - 含义：int8 的 19.4% NaN 与对 CPU 的漂移（§6.1/§6.1a）是**确定性量化伪影**，不是随机噪声——"同一张图每次都坏成一样"。对可复现性是好事（结果稳定可复现），对判别质量是坏事（稳定地偏）。阈值/重跑救不了，只能换精度口径（与 §6.2 结论一致）。
 
+### 6.1c 栈升级 spike — 结论 `not_fixed`（M3.6 E2，2026-06-16；隔离 env + N=20 probe）
+
+隔离 env `pytorch_dl_26`（**torch 2.6.0+cu124 + transformers 4.57.1 + bnb 0.49.2**，主 env 零改动）对 N=20 probe（12 张旧 int8-NaN + 8 张 ok，覆盖 safe/violence/sexual/general_harm）做三向对照（旧主 env int8 / 新 env int8 / CPU bf16 reference）。这正是 M3 当年因 torch 2.5 用不了的 transformers 4.57 组合。
+
+| 指标 | 旧 int8 | **新栈 int8** | CPU bf16 |
+|---|---|---|---|
+| NaN（probe，NaN 富集集） | 60% | **35%** | 0% |
+| 旧 NaN 图恢复 | — | 5/12 恢复、7 仍 NaN | — |
+| coverage | 40% | 65% | 100% |
+| label agreement vs CPU（@0.30，13 张双有效） | — | **31%（4/13）** | — |
+| confidence drift vs CPU | — | **mean 0.67 / max 1.0** | — |
+
+**结论 = `not_fixed`**：升栈把 NaN 减半、覆盖升，但**存活的 int8 分数与 CPU 参考严重不一致（仅 31% 同向、漂移 0.67）**——量化伪影**未解决**，反而把部分 NaN 变成"静默错分"。int8 仍不可信，**CPU bf16 仍是真值参考**；判别质量优化不能靠升栈，须换精度（CPU/非量化）或换模型。**不采纳进主线**（升主 env 是边界外，需另 Ask-first）。
+
 ### 6.2 阈值扫描（int8 分数上；量化漂移背景下解读）
 
 | threshold | 判 unsafe 的合成图 |
