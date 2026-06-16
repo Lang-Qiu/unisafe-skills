@@ -54,3 +54,14 @@
 |---|---|---|---|---|---|
 | **before**（M2 基线） | 2026-06-15 | GPT 5.4 Thinking HIGH | 7/8 | 0 | 通过；P8 的 AUROC 提示词在"无成型文件"时因不够直接未触发本 skill |
 | **after**（M3.5 W2 description 调优后） | 待测（M4 前人工） | — | — | — | description 已扩"评估已有预测/算指标"语义 + 新增 P9/P10；预期补上 P8 类触发、负例仍 0 |
+
+## 6. 自动锚点覆盖自检（佐证，**非真触发结果**）
+
+> 工具：`reports/calibration/_anchor_coverage.py`（gitignored）。从本表 §1/§2 探针 +
+> `SKILL.md` description 锚点做**关键词代理**判定（verb∧domain-noun ∧ ¬跨模态 ∧ ¬数据集路由）。
+> **这不是触发测试**——真触发是路由模型的整体判断（§3/§5 人工）。本检只在人工复测前**先暴露 description 锚点词缺口**。
+
+- 结果（2026-06-16，自动）：正例 **9/10** 命中锚点、负例 **6/6** 正确排除（0 代理误触发）。
+- 代理风险点 **P6**「How often does the guard over-refuse on XSTest probes?」——问句无显式评测动词
+  （run/score/compute…），仅命中名词锚点 → 关键词路由可能欠触发；真模型可经语义触发。**注意此盲点
+  与 §5 真测 P8 的"无成型文件未触发"不同**——代理与真路由盲点不重叠，故本检只作佐证，after 行仍须人工。
