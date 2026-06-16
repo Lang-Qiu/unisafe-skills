@@ -82,6 +82,7 @@ class ShieldGemma2Guard(GuardAdapter):
         self._unknown_policy_names: set = set()  # name-level audit backing store
         self._nan_fallback_recovered: int = 0  # E3: count of int8-NaN rows recovered
         self._fallback_models: Dict[str, Any] = {}  # E3: lazily-loaded fallback models
+        self._fallback_dead_modes: set = set()  # E3: modes that failed (e.g. GPU OOM) — skip thereafter
         self._model = None
         self._processor = None
         self._device: Optional[str] = None
@@ -233,10 +234,13 @@ class ShieldGemma2Guard(GuardAdapter):
                 "gpu": (("gpu", "gpu-fp16"),),
                 "cpu": (("cpu", "cpu-bf16"),)}.get(self.nan_fallback, ())
         for mode, via in plan:
+            if mode in self._fallback_dead_modes:
+                continue  # already failed this run (e.g. GPU OOM) — don't re-thrash
             try:
                 scored = self._fallback_forward(image, mode)
             except Exception:
-                continue  # OOM / load failure / timeout -> next mode
+                self._fallback_dead_modes.add(mode)  # OOM/load fail is deterministic here
+                continue  # -> next mode (cpu is the reliable last resort)
             if scored and not any(math.isnan(yes) for _key, yes in scored):
                 return scored, via
         return None

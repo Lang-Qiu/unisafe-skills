@@ -186,6 +186,29 @@ class TestNanFallback(unittest.TestCase):
         self.assertEqual(result["raw_output"]["quant"], "int8->cpu-bf16")  # gpu OOM -> cpu
         self.assertEqual(guard.nan_fallback_recovered, 1)
 
+    def test_auto_caches_dead_gpu_mode(self):
+        # 8GB can't co-host int8 + fp16: GPU OOMs. The dead mode must be cached so
+        # auto doesn't re-attempt the OOM load on every NaN image.
+        calls = {"gpu": 0, "cpu": 0}
+
+        def fb(self, image, mode):
+            calls[mode] += 1
+            if mode == "gpu":
+                raise RuntimeError("CUDA out of memory")
+            return [("violence", 0.9)]
+
+        guard = ShieldGemma2Guard({"nan_fallback": "auto"})
+        with mock.patch.object(ShieldGemma2Guard, "_ensure_loaded", lambda self: None), \
+             mock.patch.object(ShieldGemma2Guard, "_load_image", lambda self, r: object()), \
+             mock.patch.object(ShieldGemma2Guard, "_forward_probs", lambda self, image: _nan_scored()), \
+             mock.patch.object(ShieldGemma2Guard, "_fallback_forward", fb):
+            guard.predict(_record())
+            guard.predict(_record())
+        self.assertEqual(calls["gpu"], 1)  # tried once, then cached dead
+        self.assertEqual(calls["cpu"], 2)
+        self.assertEqual(guard.nan_fallback_recovered, 2)
+        self.assertIn("gpu", guard._fallback_dead_modes)
+
     def test_nan_fallback_gpu_recovers(self):
         def fb(self, image, mode):
             self_assert = ("violence", 0.7)
