@@ -47,6 +47,15 @@ huggingface/
 # 例外：课程报告图表（脚本 report_artifacts/_make_figures.py 可从 result_summary.csv 再生；
 # 非数据集图像，是交付物）
 !report_artifacts/figures/*.png
+# LaTeX 构建中间档（report.tex 可复编；只留 .tex + .pdf）
+report_artifacts/*.aux
+report_artifacts/*.log
+report_artifacts/*.out
+report_artifacts/*.fls
+report_artifacts/*.fdb_latexmk
+report_artifacts/*.xdv
+report_artifacts/*.synctex.gz
+report_artifacts/*.toc
 
 # ---- Python ----
 __pycache__/
