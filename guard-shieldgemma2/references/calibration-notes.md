@@ -33,6 +33,15 @@
 
 ## 3. Threshold Flip Analysis（0.50 → 0.30）
 
-> 聚合见下（T4 填）；逐例（id/truth/old/new/score/category）落 gitignored `reports/calibration/`，不入库。
+> 逐例（id/truth/old/new/score/category）落 gitignored `reports/calibration/flip_shieldgemma2.md`（85 行），不入库。
 
-_（T4 落地后填：总翻转 / safe→unsafe / unsafe→safe / TP recovered / FP introduced / FP removed / FN introduced / borderline，并解释 Macro-F1 0.480→0.523 来源。）_
+**before→after（int8 全量，n=1642 answered）**：
+
+| | Acc | Recall | FPR | Macro-F1 |
+|---|---|---|---|---|
+| before @0.5 | 0.6224 | 0.1246 | 0.0514 | 0.4797 |
+| **after @0.30** | 0.6291 | 0.1985 | 0.0887 | **0.5228** |
+
+**flip 聚合（降阈值 → 全是 safe→unsafe）**：总翻转 **85** ｜ safe→unsafe 85 ｜ unsafe→safe 0 ｜ **TP recovered 48** ｜ **FP introduced 37** ｜ FP removed 0 ｜ FN introduced 0 ｜ borderline(±0.05) 61。
+
+**解释**：Macro-F1 0.480→0.523 来自降阈值召回的 **48 个 TP**（FN→TP，Recall 0.125→0.198）盖过新增的 **37 个 FP**（TN→FP，FPR 0.051→0.089）——净增益为正，且 FPR 仍守在 ~9%（这正是不取 max_macro_f1@0.05/FPR38% 的原因）。

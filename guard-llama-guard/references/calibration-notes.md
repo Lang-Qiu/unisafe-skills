@@ -35,6 +35,15 @@
 
 ## 3. Threshold Flip Analysis（0.50 → 0.55）
 
-> 聚合见下（T4 填）；逐例（id/truth/old/new/score/category）落 gitignored `reports/calibration/`，不入库。
+> 逐例落 gitignored `reports/calibration/flip_llama-guard.md`（39 行），不入库。
 
-_（T4 落地后填：总翻转 / safe→unsafe / unsafe→safe / TP recovered / FP introduced / FP removed / FN introduced / borderline，并解释 Macro-F1 0.779→0.793 来源。）_
+**before→after（n=1911 answered）**：
+
+| | Acc | Recall | FPR | Macro-F1 |
+|---|---|---|---|---|
+| before @0.5（≈argmax） | 0.8885 | 0.6642 | 0.0753 | 0.7788 |
+| **after @0.55** | 0.9016 | 0.6377 | 0.0559 | **0.7928** |
+
+**flip 聚合（升阈值 → 全是 unsafe→safe）**：总翻转 **39** ｜ safe→unsafe 0 ｜ unsafe→safe 39 ｜ TP recovered 0 ｜ FP introduced 0 ｜ **FP removed 32** ｜ **FN introduced 7** ｜ borderline(±0.05) 37。
+
+**解释**：Macro-F1 0.779→0.793 来自升阈值去掉的 **32 个 FP**（FP→TN，FPR 0.075→0.056）盖过新增的 **7 个 FN**（TP→FN，Recall 0.664→0.638）——净增益为正，4.6:1 的 FP/FN 兑换比说明这是划算的保守化。

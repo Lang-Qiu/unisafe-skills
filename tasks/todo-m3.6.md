@@ -11,7 +11,7 @@
 - [x] 任务 1（E1a）生产精度 sweep（commit `a6947b1`）：sg2 int8（AUROC 0.6133）+ llama（AUROC 0.8881）sweep 表落各自 `references/calibration-notes.md`；选点 **llama=max_macro_f1 0.55 / sg2(int8)=recall@FPR≤0.1 0.30**（实测定，不照搬 CPU 0.10、不取 sg2 max_macro_f1=0.05/FPR38%）；max_macro_f1 与高召回两备选档留档
 - [x] 任务 2（E1-llama 阈值机制，TDD · AD-1）：`llama_guard` 加 `_apply_threshold`（`is_unsafe=confidence>=threshold`，conf=None 回退 argmax）+ `DEFAULT_THRESHOLD=0.55` + `_parse_one` 调用 + main `--threshold`（default None→adapter 0.55）+ config 回显；**5 测试绿**（默认 0.55/覆盖/阈值两侧/回退/0.5≈argmax）；llama 105 全绿无回归（M · 依赖 T1）
 - [x] 任务 3（E1-应用默认）：sg2 `DEFAULT_THRESHOLD` 0.5→**0.30** + sg2 main `--threshold` default 0.5→None（adapter 拥有默认）+ docstring/SKILL/io 注；唯一翻转用例 `test_all_under_threshold_is_safe` 显式 `threshold=0.5` + 新增 `test_default_threshold_is_calibrated_030`；**黄金未翻**（caption-rule 基线无阈值，无需重锁）；llama 默认 0.55（T2 已落）+ SKILL 注；`--threshold 0.5` 复现旧行为；**sg2 100/llama 105 全绿**（M · 依赖 T1,T2）
-- [ ] 任务 4（E1-flip + 对照）：flip analysis（0.5→新）聚合（总翻转/safe↔unsafe/TP recovered/FP intro/FP removed/FN intro/borderline）落 calibration-notes，逐例落 **gitignored** `reports/calibration/`；新默认 vs 0.5 的 Acc/MacroF1/Recall/FPR **before→after** 对照表（M · 依赖 T3）
+- [x] 任务 4（E1-flip + 对照）：flip analysis 聚合落两侧 calibration-notes §3，逐例落 **gitignored** `reports/calibration/`（已验 check-ignore）。**sg2 0.5→0.30**：85 翻转全 safe→unsafe（**48 TP recovered** 盖 **37 FP**）→ MacroF1 0.480→0.523；**llama 0.5→0.55**：39 翻转全 unsafe→safe（**32 FP removed** 盖 **7 FN**）→ MacroF1 0.779→0.793。before→after 对照表入库；`.gitignore` 加 `reports/`（M · 依赖 T3）
 
 ## Phase B · E2（栈升级隔离 spike，并行）
 
