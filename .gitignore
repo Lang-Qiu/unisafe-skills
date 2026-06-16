@@ -44,6 +44,9 @@ huggingface/
 # 字节一致性由 tests/test_synth_images.py 锁定；真实数据集图像仍然全部不入库）
 !guard-shieldgemma2/tests/fixtures/images/*.png
 !guard-shieldgemma2/examples/images/*.png
+# 例外：课程报告图表（脚本 report_artifacts/_make_figures.py 可从 result_summary.csv 再生；
+# 非数据集图像，是交付物）
+!report_artifacts/figures/*.png
 
 # ---- Python ----
 __pycache__/
