@@ -48,6 +48,22 @@ def _patched_guard(scored, threshold=None):
     return guard, result
 
 
+def _nan_scored():
+    return [("dangerous", float("nan")), ("sexual", float("nan")), ("violence", float("nan"))]
+
+
+def _patched_guard_fb(primary_scored, fallback_fn, config):
+    """E3: primary int8 forward + a stubbed _fallback_forward(self, image, mode)."""
+    guard = ShieldGemma2Guard(config)
+    with mock.patch.object(ShieldGemma2Guard, "_ensure_loaded", lambda self: None), \
+         mock.patch.object(ShieldGemma2Guard, "_load_image", lambda self, record: object()), \
+         mock.patch.object(ShieldGemma2Guard, "_forward_probs",
+                           lambda self, image: list(primary_scored)), \
+         mock.patch.object(ShieldGemma2Guard, "_fallback_forward", fallback_fn):
+        result = guard.predict(_record())
+    return guard, result
+
+
 @contextlib.contextmanager
 def _fake_runtime_deps():
     """Let available() reach the model-loading seam without real heavy deps."""
@@ -128,6 +144,7 @@ class TestVerdicts(unittest.TestCase):
         self.assertEqual(guard.unknown_policy_count, 1)
 
     def test_nan_probabilities_become_error_row(self):
+        # default nan_fallback="none" (E3): NaN stays a record-level error row
         _, result = _patched_guard([("dangerous", float("nan")), ("violence", 0.1)])
         self.assertIsNone(result["prediction"]["is_unsafe"])
         self.assertTrue(result["error"].startswith("nan_probabilities"))
@@ -140,6 +157,58 @@ class TestVerdicts(unittest.TestCase):
             result = guard.predict(record)
         self.assertIsNone(result["prediction"]["is_unsafe"])
         self.assertTrue(result["error"].startswith("image_decode_error"))
+
+
+class TestNanFallback(unittest.TestCase):
+    """E3: int8 NaN -> per-record non-quantized fallback (recover coverage)."""
+
+    def test_default_nan_fallback_is_none(self):
+        self.assertEqual(ShieldGemma2Guard({}).nan_fallback, "none")
+        self.assertEqual(ShieldGemma2Guard({}).nan_fallback_recovered, 0)
+
+    def test_nan_fallback_cpu_recovers(self):
+        def fb(self, image, mode):
+            return [("dangerous", 0.1), ("sexual", 0.1), ("violence", 0.8)]
+        guard, result = _patched_guard_fb(_nan_scored(), fb, {"nan_fallback": "cpu"})
+        self.assertIs(result["prediction"]["is_unsafe"], True)  # 0.8 >= 0.30
+        self.assertIsNone(result["error"])
+        self.assertEqual(result["raw_output"]["quant"], "int8->cpu-bf16")
+        self.assertIn("nan_fallback_recovered", result["prediction"].get("warnings", []))
+        self.assertEqual(guard.nan_fallback_recovered, 1)
+
+    def test_nan_fallback_auto_gpu_oom_then_cpu(self):
+        def fb(self, image, mode):
+            if mode == "gpu":
+                raise RuntimeError("CUDA out of memory")
+            return [("dangerous", 0.1), ("sexual", 0.1), ("violence", 0.9)]
+        guard, result = _patched_guard_fb(_nan_scored(), fb, {"nan_fallback": "auto"})
+        self.assertIs(result["prediction"]["is_unsafe"], True)
+        self.assertEqual(result["raw_output"]["quant"], "int8->cpu-bf16")  # gpu OOM -> cpu
+        self.assertEqual(guard.nan_fallback_recovered, 1)
+
+    def test_nan_fallback_gpu_recovers(self):
+        def fb(self, image, mode):
+            self_assert = ("violence", 0.7)
+            return [("dangerous", 0.1), ("sexual", 0.1), self_assert]
+        guard, result = _patched_guard_fb(_nan_scored(), fb, {"nan_fallback": "gpu"})
+        self.assertEqual(result["raw_output"]["quant"], "int8->gpu-fp16")
+        self.assertEqual(guard.nan_fallback_recovered, 1)
+
+    def test_nan_fallback_also_nan_is_error(self):
+        def fb(self, image, mode):
+            return _nan_scored()
+        guard, result = _patched_guard_fb(_nan_scored(), fb, {"nan_fallback": "cpu"})
+        self.assertIsNone(result["prediction"]["is_unsafe"])
+        self.assertTrue(result["error"].startswith("nan_probabilities"))
+        self.assertEqual(guard.nan_fallback_recovered, 0)
+
+    def test_nan_fallback_none_never_calls_fallback(self):
+        def fb(self, image, mode):
+            raise AssertionError("fallback must not run when nan_fallback=none")
+        guard, result = _patched_guard_fb(_nan_scored(), fb, {"nan_fallback": "none"})
+        self.assertIsNone(result["prediction"]["is_unsafe"])
+        self.assertTrue(result["error"].startswith("nan_probabilities"))
+        self.assertEqual(guard.nan_fallback_recovered, 0)
 
 
 class TestAvailability(unittest.TestCase):

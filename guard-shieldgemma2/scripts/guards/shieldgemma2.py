@@ -24,7 +24,14 @@ Contract (M3_SPEC section 5):
     in raw_output.policy_scores on every row; unsafe with no mapped category
     falls back to general_harm (M0 section 4);
   - NaN probabilities -> record-level error row (defensive: the 4-bit failure
-    shape observed in task 4);
+    shape observed in task 4) UNLESS nan_fallback is enabled (M3.7 E3): on int8
+    NaN, re-score that single image with a non-quantized fallback model
+    (auto=fp16-GPU then CPU bf16, or gpu/cpu); recovered rows carry
+    raw_output.quant="int8->{gpu-fp16|cpu-bf16}" + prediction.warnings
+    ["nan_fallback_recovered"]; nan_fallback="none" (default) preserves the old
+    error-row behavior exactly. NOTE the recovered score is bf16/fp16 under the
+    int8-calibrated 0.30 threshold (same [0,1] yes-prob space, better-ranked) —
+    E3 recovers COVERAGE, it does not fix the int8 quality drift (notes §6.1a);
   - soft timeout default 120s (vision inference; CUDA steps cannot be
     interrupted — late results are discarded, same pattern as the text guards).
 """
@@ -69,8 +76,12 @@ class ShieldGemma2Guard(GuardAdapter):
         self.threshold: float = float(config.get("threshold")
                                       if config.get("threshold") is not None else DEFAULT_THRESHOLD)
         self.hf_token: Optional[str] = config.get("hf_token")
+        # M3.7 E3: per-record NaN fallback precision. none(default)|auto|gpu|cpu.
+        self.nan_fallback: str = config.get("nan_fallback") or "none"
         self.model_revision: Optional[str] = None  # W1: resolved commit hash after load
         self._unknown_policy_names: set = set()  # name-level audit backing store
+        self._nan_fallback_recovered: int = 0  # E3: count of int8-NaN rows recovered
+        self._fallback_models: Dict[str, Any] = {}  # E3: lazily-loaded fallback models
         self._model = None
         self._processor = None
         self._device: Optional[str] = None
@@ -82,6 +93,13 @@ class ShieldGemma2Guard(GuardAdapter):
         """Distinct unmapped policy names seen this run (name-level audit, AD-8;
         threshold-independent — read by main.py into run_metadata.warnings)."""
         return len(self._unknown_policy_names)
+
+    @property
+    def nan_fallback_recovered(self) -> int:
+        """E3: count of int8-NaN rows recovered via the non-quantized fallback
+        this run — read by main.py into run_metadata.warnings (mirrors
+        unknown_policy_count)."""
+        return self._nan_fallback_recovered
 
     @property
     def capabilities(self) -> Dict[str, Any]:
@@ -142,20 +160,19 @@ class ShieldGemma2Guard(GuardAdapter):
         self.model_revision = getattr(self._model.config, "_commit_hash", None)
 
     # ------------------------------------------------------------- inference
-    def _forward_probs(self, image) -> List[Tuple[str, float]]:
-        """One batched forward (all policies); returns [(policy_key, yes_prob)].
+    def _run_forward(self, model, inputs):
+        """Threaded forward with soft timeout; returns the model output or raises.
 
-        Seam for offline tests: everything torch-side lives here.
+        CUDA steps cannot be interrupted — a late result is discarded (TimeoutError).
         """
         import torch
 
-        inputs = self._processor(images=[image], return_tensors="pt").to(self._device)
         holder: Dict[str, Any] = {}
 
         def worker():
             try:
                 with torch.no_grad():
-                    holder["out"] = self._model(**inputs)
+                    holder["out"] = model(**inputs)
             except Exception as exc:
                 holder["error"] = exc
 
@@ -166,9 +183,63 @@ class ShieldGemma2Guard(GuardAdapter):
             raise TimeoutError(f"soft timeout after {self.timeout_s}s (result discarded)")
         if "error" in holder:
             raise holder["error"]
-        rows = holder["out"].probabilities.float().cpu().tolist()
+        return holder["out"]
+
+    def _probs_from_output(self, out) -> List[Tuple[str, float]]:
+        rows = out.probabilities.float().cpu().tolist()
         keys = self._policy_keys or [f"policy_{i}" for i in range(len(rows))]
         return [(key, float(row[0])) for key, row in zip(keys, rows)]
+
+    def _forward_probs(self, image) -> List[Tuple[str, float]]:
+        """One batched forward on the primary (int8) model; [(policy_key, yes_prob)].
+
+        Seam for offline tests: everything torch-side lives here.
+        """
+        inputs = self._processor(images=[image], return_tensors="pt").to(self._device)
+        return self._probs_from_output(self._run_forward(self._model, inputs))
+
+    def _ensure_fallback_loaded(self, mode: str) -> Tuple[Any, str]:
+        """E3: lazily load a non-quantized fallback model. gpu=fp16 on cuda:0,
+        cpu=bf16 on cpu (reuses the clean CPU baseline). Cached per mode."""
+        if mode in self._fallback_models:
+            return self._fallback_models[mode]
+        import torch
+        from transformers import ShieldGemma2ForImageClassification
+
+        auth = {"token": self.hf_token} if self.hf_token else {}
+        if mode == "gpu":
+            model = ShieldGemma2ForImageClassification.from_pretrained(
+                self.model_id, torch_dtype=torch.float16,
+                device_map="cuda:0", **auth).eval()
+            device = "cuda:0"
+        else:  # cpu bf16, no quantization (the §6.1a truth reference)
+            model = ShieldGemma2ForImageClassification.from_pretrained(
+                self.model_id, torch_dtype=torch.bfloat16,
+                attn_implementation="eager", **auth).eval()
+            device = "cpu"
+        self._fallback_models[mode] = (model, device)
+        return model, device
+
+    def _fallback_forward(self, image, mode: str) -> List[Tuple[str, float]]:
+        """E3: re-score one image on a non-quantized fallback model. Torch seam."""
+        model, device = self._ensure_fallback_loaded(mode)
+        inputs = self._processor(images=[image], return_tensors="pt").to(device)
+        return self._probs_from_output(self._run_forward(model, inputs))
+
+    def _attempt_fallback(self, image):
+        """E3: first mode that yields a non-NaN score wins. Returns (scored, via)
+        or None. auto = fp16-GPU then CPU bf16 (covers CUDA OOM and gpu-NaN)."""
+        plan = {"auto": (("gpu", "gpu-fp16"), ("cpu", "cpu-bf16")),
+                "gpu": (("gpu", "gpu-fp16"),),
+                "cpu": (("cpu", "cpu-bf16"),)}.get(self.nan_fallback, ())
+        for mode, via in plan:
+            try:
+                scored = self._fallback_forward(image, mode)
+            except Exception:
+                continue  # OOM / load failure / timeout -> next mode
+            if scored and not any(math.isnan(yes) for _key, yes in scored):
+                return scored, via
+        return None
 
     def _load_image(self, record: Dict[str, Any]):
         from PIL import Image
@@ -203,15 +274,24 @@ class ShieldGemma2Guard(GuardAdapter):
                 error=(f"failed after {self.retries + 1} attempt(s): "
                        f"{type(last_error).__name__}: {last_error}"))
 
+        recovered_via: Optional[str] = None
         if any(math.isnan(yes) for _key, yes in scored):
-            return self.make_result(
-                record, is_unsafe=None, device=self._device or "cpu",
-                latency_ms=(time.perf_counter() - start) * 1000.0,
-                raw_output={"policy_scores": {k: v for k, v in scored},
-                            "quant": getattr(self, "_quant", None)},
-                error=("nan_probabilities: quantized forward returned NaN "
-                       "(known 4-bit failure shape; see references/shieldgemma2-notes.md)"))
+            fb = self._attempt_fallback(image) if self.nan_fallback != "none" else None
+            if fb is None:
+                extra = ("" if self.nan_fallback == "none"
+                         else f"; nan_fallback={self.nan_fallback} did not recover")
+                return self.make_result(
+                    record, is_unsafe=None, device=self._device or "cpu",
+                    latency_ms=(time.perf_counter() - start) * 1000.0,
+                    raw_output={"policy_scores": {k: v for k, v in scored},
+                                "quant": getattr(self, "_quant", None)},
+                    error=("nan_probabilities: quantized forward returned NaN "
+                           "(known 4-bit failure shape; see references/shieldgemma2-notes.md)"
+                           + extra))
+            scored, recovered_via = fb  # E3: recovered on a non-quantized model
+            self._nan_fallback_recovered += 1
 
+        quant_tag = f"int8->{recovered_via}" if recovered_via else getattr(self, "_quant", None)
         max_yes = max(yes for _key, yes in scored) if scored else 0.0
         is_unsafe = max_yes >= self.threshold
         categories: List[str] = []
@@ -231,7 +311,7 @@ class ShieldGemma2Guard(GuardAdapter):
         if not is_unsafe:
             categories = []
 
-        return self.make_result(
+        result = self.make_result(
             record,
             is_unsafe=is_unsafe,
             risk_categories=categories,
@@ -240,7 +320,10 @@ class ShieldGemma2Guard(GuardAdapter):
             raw_output={"policy_scores": {k: round(v, 6) for k, v in scored},
                         "policy_order": [k for k, _ in scored],
                         "threshold": self.threshold,
-                        "quant": getattr(self, "_quant", None)},
+                        "quant": quant_tag},
             latency_ms=(time.perf_counter() - start) * 1000.0,
             device=self._device or "cpu",
         )
+        if recovered_via:  # E3: surface the recovery on the row (mirrors main.py warning landing)
+            result["prediction"].setdefault("warnings", []).append("nan_fallback_recovered")
+        return result
