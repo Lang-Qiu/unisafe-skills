@@ -209,6 +209,30 @@ class TestNanFallback(unittest.TestCase):
         self.assertEqual(guard.nan_fallback_recovered, 2)
         self.assertIn("gpu", guard._fallback_dead_modes)
 
+    def test_transient_timeout_does_not_kill_mode(self):
+        # a per-image soft timeout must NOT cascade: the mode stays alive so later
+        # images still recover (regression for the E3 eval cascade where one slow
+        # CPU forward killed all remaining recoveries)
+        seq = [TimeoutError("soft timeout after 120.0s"), [("violence", 0.9)]]
+
+        def fb(self, image, mode):
+            x = seq.pop(0)
+            if isinstance(x, Exception):
+                raise x
+            return x
+
+        guard = ShieldGemma2Guard({"nan_fallback": "cpu"})
+        with mock.patch.object(ShieldGemma2Guard, "_ensure_loaded", lambda self: None), \
+             mock.patch.object(ShieldGemma2Guard, "_load_image", lambda self, r: object()), \
+             mock.patch.object(ShieldGemma2Guard, "_forward_probs", lambda self, image: _nan_scored()), \
+             mock.patch.object(ShieldGemma2Guard, "_fallback_forward", fb):
+            r1 = guard.predict(_record())  # cpu times out -> this image stays an error
+            r2 = guard.predict(_record())  # cpu still alive -> recovers
+        self.assertIsNone(r1["prediction"]["is_unsafe"])
+        self.assertIs(r2["prediction"]["is_unsafe"], True)
+        self.assertEqual(guard.nan_fallback_recovered, 1)
+        self.assertNotIn("cpu", guard._fallback_dead_modes)
+
     def test_nan_fallback_gpu_recovers(self):
         def fb(self, image, mode):
             self_assert = ("violence", 0.7)

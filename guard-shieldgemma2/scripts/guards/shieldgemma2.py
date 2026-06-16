@@ -229,7 +229,13 @@ class ShieldGemma2Guard(GuardAdapter):
 
     def _attempt_fallback(self, image):
         """E3: first mode that yields a non-NaN score wins. Returns (scored, via)
-        or None. auto = fp16-GPU then CPU bf16 (covers CUDA OOM and gpu-NaN)."""
+        or None. auto = fp16-GPU then CPU bf16 (covers CUDA OOM and gpu-NaN).
+
+        Failure handling distinguishes deterministic from transient: a non-timeout
+        Exception (GPU OOM / load failure) marks the mode dead for the rest of the
+        run (don't re-thrash). A TimeoutError is per-image and transient (CPU bf16
+        is ~90s/img and can brush the soft timeout under load) — it only skips THIS
+        image, so one slow image never cascades into killing the whole fallback."""
         plan = {"auto": (("gpu", "gpu-fp16"), ("cpu", "cpu-bf16")),
                 "gpu": (("gpu", "gpu-fp16"),),
                 "cpu": (("cpu", "cpu-bf16"),)}.get(self.nan_fallback, ())
@@ -238,8 +244,10 @@ class ShieldGemma2Guard(GuardAdapter):
                 continue  # already failed this run (e.g. GPU OOM) — don't re-thrash
             try:
                 scored = self._fallback_forward(image, mode)
+            except TimeoutError:
+                continue  # transient: this image only, keep the mode alive
             except Exception:
-                self._fallback_dead_modes.add(mode)  # OOM/load fail is deterministic here
+                self._fallback_dead_modes.add(mode)  # OOM/load fail is deterministic
                 continue  # -> next mode (cpu is the reliable last resort)
             if scored and not any(math.isnan(yes) for _key, yes in scored):
                 return scored, via
